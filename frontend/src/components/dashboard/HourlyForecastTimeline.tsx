@@ -45,10 +45,12 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
 
         {/* 24h vs 48h Toggle Buttons */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-[#070D1E] p-1 rounded-xl border border-white/10 text-xs">
+          <div className="flex items-center bg-[#070D1E] p-1 rounded-xl border border-white/10 text-xs" role="group" aria-label="Forecast timeframe selector">
             <button
               onClick={() => onSelectHours(24)}
-              className={`px-3 py-1 rounded-lg font-bold transition-all ${
+              aria-label="24-Hour Horizon"
+              aria-pressed={forecastHours === 24}
+              className={`px-3 py-1 rounded-lg font-bold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 forecastHours === 24
                   ? 'bg-emerald-500 text-slate-950 shadow'
                   : 'text-slate-400 hover:text-white'
@@ -58,7 +60,9 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
             </button>
             <button
               onClick={() => onSelectHours(48)}
-              className={`px-3 py-1 rounded-lg font-bold transition-all ${
+              aria-label="48-Hour Extended Horizon"
+              aria-pressed={forecastHours === 48}
+              className={`px-3 py-1 rounded-lg font-bold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                 forecastHours === 48
                   ? 'bg-cyan-500 text-slate-950 shadow'
                   : 'text-slate-400 hover:text-white'
