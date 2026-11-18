@@ -6,6 +6,9 @@ import { PollutantGrid } from './components/dashboard/PollutantGrid';
 import { HourlyForecastTimeline } from './components/dashboard/HourlyForecastTimeline';
 import { OptimalWindowCard } from './components/dashboard/OptimalWindowCard';
 import { IndoorProtocolCard } from './components/dashboard/IndoorProtocolCard';
+import { WinterSmogShield } from './components/dashboard/WinterSmogShield';
+import { MaskFilterEstimator } from './components/dashboard/MaskFilterEstimator';
+import { CityComparisonMatrix } from './components/dashboard/CityComparisonMatrix';
 import { CohortRecommendationsGrid } from './components/dashboard/CohortRecommendationsGrid';
 import { SustainableLivingSection } from './components/sustainability/SustainableLivingSection';
 import { CommunityIntelligenceCard } from './components/dashboard/CommunityIntelligenceCard';
@@ -142,6 +145,9 @@ export const App: React.FC = () => {
               onSelectStandard={setStandard}
             />
 
+            {/* Winter Inversion & Severe Smog Physics Shield (Challenge 6 Core) */}
+            <WinterSmogShield reading={reading} />
+
             {/* Section E: Optimal Clean Air & Peak Smog Windows */}
             <OptimalWindowCard forecast={forecast} />
 
@@ -156,8 +162,17 @@ export const App: React.FC = () => {
               onSelectHours={setForecastHours}
             />
 
+            {/* Aerosol Protection & Respirator Saturation Estimator */}
+            <MaskFilterEstimator reading={reading} />
+
             {/* Section F: Indoor Clean Haven & Ventilation Protocol */}
             <IndoorProtocolCard protocol={recommendations?.indoor_protocol} />
+
+            {/* Metropolitan Air Quality Benchmark Radar with Quick City Switcher */}
+            <CityComparisonMatrix
+              currentReading={reading}
+              onSelectCity={(selectedCity) => selectLocation(selectedCity)}
+            />
 
             {/* Cohort Clinical Directives */}
             <CohortRecommendationsGrid cohorts={recommendations?.cohort_recommendations} />

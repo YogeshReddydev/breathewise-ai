@@ -37,9 +37,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navLinks = [
     { label: 'Overview', href: '#overview' },
     { label: 'Forecast', href: '#forecast' },
+    { label: 'Winter Smog', href: '#winter-smog' },
     { label: 'Pollutants', href: '#pollutants' },
     { label: 'Best Window', href: '#activity-window' },
-    { label: 'Indoor Air', href: '#indoor-air' },
+    { label: 'Respirators', href: '#respirators' },
+    { label: 'Indoor Haven', href: '#indoor-air' },
+    { label: 'City Radar', href: '#city-benchmark' },
     { label: 'Family Advisory', href: '#family-profiles' },
     { label: 'Transit', href: '#sustainable-transit' },
     { label: 'Community', href: '#community' },

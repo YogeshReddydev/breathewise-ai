@@ -17,6 +17,7 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
   onSelectHours,
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
   if (!forecast || !forecast.hourly || forecast.hourly.length === 0) {
     return null;
@@ -30,14 +31,22 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
     120
   );
 
+  const activeIndex = selectedIdx !== null ? selectedIdx : hoveredIdx;
+  const activeItem = activeIndex !== null ? items[activeIndex] : null;
+  const activeAQI = activeItem
+    ? isCPCB && activeItem.cpcb_aqi !== null && activeItem.cpcb_aqi !== undefined
+      ? activeItem.cpcb_aqi
+      : activeItem.aqi_us
+    : null;
+
   return (
-    <div id="forecast" className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm mt-8">
+    <div id="forecast" className="glass-card-elevated p-6 mt-8 relative overflow-hidden">
       
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
         <div>
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-800">
+            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-800 shadow-xs">
               <Calendar className="w-5 h-5 text-emerald-700" />
             </div>
             <div>
@@ -56,17 +65,17 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
 
         {/* 24h vs 48h Toggle Buttons & Model Provenance */}
         <div className="flex items-center gap-3">
-          <span className="hidden sm:flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-            <Radio className="w-3.5 h-3.5 text-teal-600" />
+          <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-600 font-medium bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+            <Radio className="w-3.5 h-3.5 text-teal-600 animate-pulse" />
             CAMS/ECMWF Model
           </span>
 
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs" role="group" aria-label="Forecast timeframe selector">
+          <div className="flex items-center bg-slate-100/90 p-0.5 rounded-xl border border-slate-200 text-xs shadow-xs" role="group" aria-label="Forecast timeframe selector">
             <button
-              onClick={() => onSelectHours(24)}
+              onClick={() => { onSelectHours(24); setSelectedIdx(null); }}
               aria-label="24-Hour Forecast Horizon"
               aria-pressed={forecastHours === 24}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                 forecastHours === 24
                   ? 'bg-white text-emerald-900 shadow-sm border border-slate-200/90'
                   : 'text-slate-600 hover:text-slate-900'
@@ -75,10 +84,10 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
               24-Hour Horizon
             </button>
             <button
-              onClick={() => onSelectHours(48)}
+              onClick={() => { onSelectHours(48); setSelectedIdx(null); }}
               aria-label="48-Hour Extended Horizon"
               aria-pressed={forecastHours === 48}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                 forecastHours === 48
                   ? 'bg-white text-emerald-900 shadow-sm border border-slate-200/90'
                   : 'text-slate-600 hover:text-slate-900'
@@ -89,6 +98,53 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Selected / Hovered Hour Inspection Panel */}
+      {activeItem && activeAQI !== null && (
+        <div className="mb-4 p-4 rounded-xl bg-slate-50/90 border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 animate-fadeIn transition-all">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center font-mono font-bold text-lg text-white shadow-sm shrink-0"
+              style={{ backgroundColor: isCPCB && activeItem.cpcb_color ? activeItem.cpcb_color : activeItem.color_hex }}
+            >
+              {activeAQI}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-900 text-sm">
+                  Inspection at {formatTimeHour(activeItem.time)} ({activeItem.time.split('T')[0]})
+                </span>
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                  style={{
+                    backgroundColor: `${activeItem.color_hex}15`,
+                    color: activeItem.color_hex,
+                    borderColor: `${activeItem.color_hex}40`,
+                  }}
+                >
+                  {isCPCB ? activeItem.cpcb_category || activeItem.category_label : activeItem.category_label}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                PM2.5: <strong className="font-mono">{activeItem.pm2_5.toFixed(1)} µg/m³</strong> &bull; PM10: <strong className="font-mono">{activeItem.pm10.toFixed(1)} µg/m³</strong> &bull;{' '}
+                {activeAQI <= 100
+                  ? 'Suitable for standard outdoor routines and natural aeration.'
+                  : activeAQI <= 200
+                  ? 'Sensitive cohorts should restrict prolonged outdoor exercise.'
+                  : 'High particulate load; mandatory N95 protection for outdoor exposure.'}
+              </p>
+            </div>
+          </div>
+          {selectedIdx !== null && (
+            <button
+              onClick={() => setSelectedIdx(null)}
+              className="text-xs text-slate-500 hover:text-slate-800 underline font-medium self-end md:self-center"
+            >
+              Reset to Live
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Distinction Badge */}
       <div className="flex items-center justify-between text-xs text-slate-500 mb-3 px-1">
@@ -120,17 +176,19 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
             const heightPercent = Math.max(12, Math.round((aqiValue / maxVal) * 100));
             const formattedTime = formatTimeHour(item.time);
             const isHovered = hoveredIdx === idx;
+            const isSelected = selectedIdx === idx;
             const isFirst = idx === 0;
 
             return (
               <div
                 key={idx}
+                onClick={() => setSelectedIdx(selectedIdx === idx ? null : idx)}
                 onMouseEnter={() => setHoveredIdx(idx)}
                 onMouseLeave={() => setHoveredIdx(null)}
-                className="flex-1 flex flex-col items-center group relative h-full justify-end"
+                className="flex-1 flex flex-col items-center group relative h-full justify-end cursor-pointer"
               >
                 {/* Floating Tooltip */}
-                {isHovered && (
+                {isHovered && !selectedIdx && (
                   <div className="absolute -top-16 bg-slate-900 text-white text-[10px] font-mono py-1.5 px-3 rounded-lg shadow-xl z-30 pointer-events-none whitespace-nowrap border border-slate-700">
                     <div className="font-bold text-emerald-300">{formattedTime} &bull; {item.time.split('T')[0]}</div>
                     <div>AQI: <strong>{aqiValue}</strong> ({isCPCB ? item.cpcb_category || item.category_label : item.category_label})</div>
@@ -140,15 +198,19 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
 
                 {/* AQI Numeric Label */}
                 <span className={`text-[10px] font-mono mb-1 font-bold ${
-                  isHovered ? 'text-slate-900 scale-110' : 'text-slate-500'
+                  isSelected ? 'text-emerald-900 font-black scale-125' : isHovered ? 'text-slate-900 scale-110' : 'text-slate-500'
                 }`}>
                   {aqiValue}
                 </span>
 
                 {/* Interactive Bar */}
                 <div
-                  className={`w-full rounded-t-md transition-all duration-200 cursor-pointer relative ${
-                    isHovered ? 'ring-2 ring-slate-900 shadow-md' : 'opacity-90 hover:opacity-100'
+                  className={`w-full rounded-t-md transition-all duration-200 relative ${
+                    isSelected
+                      ? 'ring-3 ring-emerald-600 shadow-lg scale-y-105'
+                      : isHovered
+                      ? 'ring-2 ring-slate-900 shadow-md'
+                      : 'opacity-90 hover:opacity-100'
                   }`}
                   style={{
                     height: `${heightPercent}%`,
@@ -157,6 +219,9 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
                 >
                   {isFirst && (
                     <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-slate-900 rounded-full" title="Current Hour" />
+                  )}
+                  {isSelected && (
+                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-2 h-2 bg-emerald-600 rounded-full ring-2 ring-white" />
                   )}
                 </div>
 

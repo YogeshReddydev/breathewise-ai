@@ -13,6 +13,15 @@ def test_health_check_endpoint():
     assert data["service"] == "BreatheWise AI Backend"
 
 
+def test_security_headers_present():
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert response.headers.get("X-Frame-Options") == "DENY"
+    assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
+    assert "default-src 'self'" in response.headers.get("Content-Security-Policy", "")
+
+
 def test_api_health_check_endpoint():
     response = client.get("/api/health")
     assert response.status_code == 200
