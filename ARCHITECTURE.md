@@ -1,107 +1,140 @@
-# BreatheWise AI — System Architecture & Technical Specifications
+# BreatheWise AI — System Architecture & Design Specification (v0.2.0)
 
-BreatheWise AI is an environmental intelligence and personal respiratory defense platform built for **Challenge 6 – Urban Air Quality Assistant**. It fuses real-time atmospheric sensor data, EPA breakpoint standards, dynamic diurnal forecasts, family vulnerability matrices, and Google Gemini multimodal reasoning to deliver actionable preventative health guidance.
+## 1. Architectural Overview
 
----
-
-## 1. High-Level Architecture
+BreatheWise AI is an enterprise-grade urban environmental intelligence platform engineered to translate multi-spectral atmospheric sensor telemetry into proactive, personalized health directives for urban families.
 
 ```mermaid
-graph TD
-    subgraph Client["Presentation Tier: React 18 + Vite + TypeScript"]
-        A[Navbar & Location Selector]
-        B[AQI Radial Gauge & Atmospheric Stats]
-        C[Pollutant Breakdown PM2.5, PM10, NO2, O3, CO, SO2]
-        D[24h Diurnal Forecast & Smog Peak Alert]
-        E[Family Vulnerability Matrix]
-        F[Preventative Action Cards & Mask Protocol]
-        G[Gemini AI Interactive Health Consultant]
+flowchart TD
+    subgraph Client ["Frontend: React + Vite + TypeScript"]
+        UI["Environmental Dashboard"]
+        Hero["AQI Radial Hero Gauge & Multi-Standard Comparison"]
+        Matrix["Atmospheric Pollutant Grid"]
+        Timeline["24-Hour & 48-Hour Forecast Curve"]
+        Haven["Indoor Clean Haven Protocol"]
+        Cohorts["Target Cohort Clinical Directives"]
+        FamilyUI["Family Protection Mode & Profile Manager"]
+        SustainUI["Sustainable Living & Emissions Calculator"]
+        ChatUI["Conversational AI Drawer (Gemini)"]
     end
 
-    subgraph Server["Application Tier: Python 3.12 + FastAPI"]
-        API[FastAPI Gateway]
-        Reg[Resilient AQI Provider Registry]
-        Calc[EPA Breakpoint & Sub-Index Calculator]
-        Rec[Intelligent Recommendation Engine]
-        Gem[Gemini Multimodal AI Service]
-        Fam[Family Profile & Sensitivity Service]
+    subgraph API ["Backend: Python FastAPI"]
+        Router["FastAPI Application Router"]
+        Security["Security & Sanitization Middleware"]
+        Cache["In-Memory TTL Telemetry Cache (900s)"]
     end
 
-    subgraph DataSources["Telemetry Tier: Atmospheric Providers & AI Models"]
-        OM[Open-Meteo High-Resolution Air Quality API]
-        WAQI[WAQI Global Sensor Network]
-        GAPI[Google Gemini 2.5 Flash Model]
+    subgraph Standards ["AQI Standards Engine"]
+        CPCB["Indian CPCB National AQI Engine\n(8 Pollutants, Min 3 Criteria)"]
+        USEPA["US EPA AQI Engine (0-500)"]
+        EAQI["European AQI Engine (CAQI / EAQI)"]
     end
 
-    A --> API
-    B --> API
-    C --> API
-    D --> API
-    E --> API
-    F --> API
-    G --> API
+    subgraph Providers ["Modular AQI Provider Network"]
+        Registry["Provider Registry & Failover"]
+        OpenMeteo["Open-Meteo Provider (Free, Live Global Models)"]
+        WAQI["WAQI Provider (World Air Quality Index Token)"]
+    end
 
-    API --> Reg
-    API --> Rec
-    API --> Fam
-    API --> Gem
+    subgraph Engines ["Intelligence & Reasoning Core"]
+        RuleEngine["Intelligent Clinical Risk Engine\n(EPA AQI & WHO 2021)"]
+        SustainSvc["Sustainable Mobility & Emissions Service"]
+        GeminiSvc["Gemini 2.5 Flash Orchestrator\n(Strict Ground-Truth Guardrails)"]
+        Fallback["Deterministic Expert Fallback"]
+    end
 
-    Reg --> Calc
-    Reg --> OM
-    Reg --> WAQI
-    Rec --> Calc
-    Rec --> Fam
-    Gem --> GAPI
+    UI --> Router
+    Router --> Security
+    Security --> Cache
+    Cache --> Registry
+    Registry --> OpenMeteo
+    Registry -. Optional .-> WAQI
+
+    OpenMeteo --> Standards
+    Standards --> RuleEngine
+    RuleEngine --> SustainSvc
+    RuleEngine --> GeminiSvc
+    GeminiSvc -. Offline/No-Key .-> Fallback
 ```
 
 ---
 
-## 2. Core Architectural Subsystems
+## 2. India-First AQI Intelligence & Multi-Standard Architecture
 
-### A. Modular AQI Provider Architecture (`backend/app/providers/`)
-- **Abstract Provider Interface (`BaseAQIProvider`)**: Enforces uniform async contracts for `get_current_aqi()`, `get_forecast_aqi()`, and `health_check()`.
-- **Open-Meteo Provider (`OpenMeteoAQIProvider`)**: Queries live high-resolution atmospheric modeling and surface sensor feeds without requiring proprietary keys. Collects PM2.5, PM10, NO2, O3, CO, SO2, and weather metrics (temperature, humidity, wind velocity, and bearing).
-- **WAQI Provider (`WAQIAQIProvider`)**: Modular secondary provider interfacing with official WAQI stations.
-- **Resilient Provider Registry (`ResilientAQIProviderRegistry`)**:
-  - Implements an in-memory geo-hashed cache with configurable TTL (default 15 minutes) to eliminate redundant external roundtrips.
-  - Multi-tiered automatic failover: If the primary provider times out or encounters network limits, failover immediately transitions to alternate providers or deterministic local baselines.
+BreatheWise AI explicitly differentiates between air quality standards and **never mixes their breakpoints or presents them as interchangeable**:
 
-### B. Standardized AQI Breakpoint Calculator (`backend/app/services/aqi_calculator.py`)
-- Employs the official US EPA piecewise linear interpolation equation:
-  $$I = \frac{I_{\text{high}} - I_{\text{low}}}{C_{\text{high}} - C_{\text{low}}} \times (C - C_{\text{low}}) + I_{\text{low}}$$
-- Calculates sub-indices across all 6 criteria pollutants to identify the exact dominant atmospheric hazard.
-- Maps indices into 6 standardized health risk categories:
-  1. **Good** (0 – 50)
-  2. **Moderate** (51 – 100)
-  3. **Unhealthy for Sensitive Groups** (101 – 150)
-  4. **Unhealthy** (151 – 200)
-  5. **Very Unhealthy** (201 – 300)
-  6. **Hazardous** (301 – 500)
+### 2.1 Indian CPCB National AQI (NAQI)
+- **Framework**: Official Central Pollution Control Board (CPCB) methodology.
+- **Criteria Evaluated**: Sub-indices for 8 criteria pollutants (PM10, PM2.5, NO2, O3, CO, SO2, NH3, Pb) using linear breakpoint interpolation:
+  $$I_p = I_{LO} + \frac{I_{HI} - I_{LO}}{B_{HI} - B_{LO}} \times (C_p - B_{LO})$$
+- **Strict Validation Rule**: At least 3 monitored pollutants must have valid readings, and at least one must be PM2.5 or PM10. If this threshold is not met, CPCB AQI is reported as **Insufficient Data** with a clear explanation, rather than inventing an unverified number.
+- **Categories & Breakpoints**:
+  - **Good (0-50)**: Minimal health impact (`#10B981`)
+  - **Satisfactory (51-100)**: Minor breathing discomfort to sensitive individuals (`#84CC16`)
+  - **Moderate (101-200)**: Breathing discomfort to people with asthma, lung, and heart diseases (`#EAB308`)
+  - **Poor (201-300)**: Breathing discomfort to most people on prolonged exposure (`#F97316`)
+  - **Very Poor (301-400)**: Respiratory illness on prolonged exposure (`#EF4444`)
+  - **Severe (401-500)**: Serious health impact even on healthy adults (`#7F1D1D`)
 
-### C. Preventative Recommendation & Risk Engine (`backend/app/services/recommendation_engine.py`)
-- **Clinical Vulnerability Multiplier**:
-  - Scales baseline AQI risk based on physiological risk coefficients:
-    - Pediatric airway hyperreactivity (< 12 years): +0.20
-    - Geriatric reduced ciliary clearance (> 65 years): +0.20
-    - Asthma / Bronchial hyperresponsiveness: +0.35
-    - Chronic Obstructive Pulmonary Disease (COPD): +0.45
-    - Cardiovascular / Hypertension: +0.30
-    - Endurance athlete high-minute ventilation: +0.15
-- **4 Pillars of Prevention**:
-  1. *Respirator Protocol*: Strict N95 / FFP2 threshold triggers.
-  2. *Natural Ventilation Guidance*: Diurnal window opening schedules.
-  3. *Active HEPA Scrubbing*: Auto / Medium / Turbo HEPA continuous filtration modes.
-  4. *Outdoor Exertion Guidance*: Safe duration caps and transit route selections.
+### 2.2 US EPA Air Quality Index
+- Standard 0–500 index: Good (0-50), Moderate (51-100), Unhealthy for Sensitive Groups (101-150), Unhealthy (151-200), Very Unhealthy (201-300), Hazardous (301-500).
 
-### D. Google Gemini Multimodal Health Consultant (`backend/app/services/gemini_service.py`)
-- Leverages the official Google GenAI SDK (`google-genai`).
-- Injects real-time atmospheric telemetry and family health profiles directly into the system prompt.
-- Formulates context-aware preventative guidance with structured follow-up suggestions and risk flags.
-- Built-in graceful degradation: If an API key is missing or network is unreachable, smoothly provides clinical rule-based consultation responses.
+### 2.3 European Air Quality Index (EAQI)
+- Evaluates atmospheric concentrations across five standardized bands: Very Good (0-25), Good (26-50), Moderate (51-75), Poor (76-100), and Very Poor (>100).
 
-### E. Frontend Design System (`frontend/src/`)
-- Modern dark-mode environmental aesthetic utilizing deep navy (`#050B14`, `#0A1128`), emerald green (`#10B981`), and cyan (`#06B6D4`) accents.
-- Custom SVG radial AQI gauge with animated progress arc and pollutant indicator.
-- 24-hour diurnal trajectory chart highlighting smog peak hours and cleanest ventilation windows.
-- Family Vulnerability Matrix allowing seamless 1-click persona switching.
+---
 
+## 3. Intelligent Recommendation Engine & Multi-Cohort Directives
+
+### 3.1 Transparent 5-Dimension Evidence Architecture
+Every recommendation generated by the engine provides 5 distinct dimensions:
+1. **Recommended Action**: Clear prescriptive directive.
+2. **Physiological Rationale**: Medical and biological mechanism explaining the risk.
+3. **Supporting Measurement**: Specific telemetry reading justifying the directive.
+4. **Expected Practical Benefit**: Tangible exposure reduction or health protection benefit.
+5. **Practical Limitations**: Caveats, equipment requirements, or operational constraints.
+
+### 3.2 Target Cohorts
+- **Families with Children**: Pediatric lung development, alveolar particulate burden, school recess protocols.
+- **Older Adults (65+)**: Autonomic cardiac strain, arterial plaque instability, blood viscosity mitigation.
+- **Students**: Active campus travel safety, classroom indoor air quality, focus and cognition.
+- **Daily Commuters**: Roadside exhaust avoidance, transit cabin air filtration, car recirculation mode.
+- **Outdoor Workers**: Occupational tidal breathing volume, N95/FFP2 respirator enforcement, indoor rest intervals.
+- **General Households**: Cross-ventilation guidelines vs. window sealing and HEPA air purifier speeds.
+
+---
+
+## 4. Sustainable Living & Mobility Module
+
+### 4.1 Methodology & Emissions Factors
+Emissions estimates are calculated using standard transport factors (DEFRA / ARAI benchmarks):
+- Solo Petrol Car: $170\,\text{g CO}_2\text{e/km}$
+- Solo Diesel Car: $155\,\text{g CO}_2\text{e/km}$
+- Hybrid Car: $100\,\text{g CO}_2\text{e/km}$
+- Electric Car (grid lifecycle): $50\,\text{g CO}_2\text{e/km}$
+- Carpooling (2 occupants): $85\,\text{g CO}_2\text{e/p-km}$
+- Carpooling (3+ occupants): $57\,\text{g CO}_2\text{e/p-km}$
+- Two-Wheeler: $75\,\text{g CO}_2\text{e/km}$
+- Public City Bus: $35\,\text{g CO}_2\text{e/p-km}$
+- Electric Metro / Train: $22\,\text{g CO}_2\text{e/p-km}$
+- Walking / Cycling: $0\,\text{g CO}_2\text{e/km}$
+
+### 4.2 Air Quality Correlation
+- When AQI is **Good / Satisfactory** ($\le 75$): Active travel (cycling/walking) is strongly encouraged to combine zero emissions with cardiovascular fitness.
+- When AQI is **Poor / Unhealthy** ($> 150$): Active outdoor cycling is flagged with a **Caution** warning due to deep particulate inhalation in traffic; **Electric Metro / Trains** are recommended as enclosed clean-air sanctuaries.
+
+---
+
+## 5. Google Gemini AI Ground-Truth Guardrails
+
+1. **No Hallucinated Stations**: The model is forbidden from inventing fictional sensor stations or synthetic IDs.
+2. **Context-Injected Telemetry**: Prompts explicitly supply verified Open-Meteo telemetry and CPCB calculations.
+3. **Deterministic Fallback**: When `GEMINI_API_KEY` is not provided, the platform seamlessly falls back to pre-formulated expert clinical responses covering transit, workouts, masks, standards, and ventilation.
+4. **Medical Disclaimer**: System enforces that guidance is advisory and educational, never a clinical diagnosis.
+
+---
+
+## 6. Family Protection Mode
+
+- **Demonstration Profiles**: Marcus, Elena, Leo, and Sophia are explicitly badged as **Fictional Demonstration Profiles** to illustrate multi-generational vulnerability responses.
+- **Custom Profile Management**: Users can remove demo profiles, create real family members with voluntary health conditions, configure activity preferences, and delete members on demand.
