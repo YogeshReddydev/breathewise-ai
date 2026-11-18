@@ -96,7 +96,7 @@ export const MemberHealthAdvisories: React.FC<MemberHealthAdvisoriesProps> = ({
         <HeartHandshake className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
         <div>
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Clinical Health Directive
+            Environmental Health Advisory
           </h4>
           <p className="text-sm font-bold text-slate-900 mt-0.5 leading-snug">
             {advisory.key_recommendation}
@@ -151,7 +151,7 @@ export const MemberHealthAdvisories: React.FC<MemberHealthAdvisoriesProps> = ({
         <div className="space-y-2.5">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
             <Check className="w-4 h-4 text-emerald-700" />
-            <span>Prescribed Action Items</span>
+            <span>Recommended Protective Action Items</span>
           </h4>
 
           {/* Outdoor Vigorous Cardio Indicator */}

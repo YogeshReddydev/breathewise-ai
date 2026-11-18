@@ -107,7 +107,7 @@ class IntelligentRecommendationEngine:
             actions.append("Open home windows for fresh air cross-ventilation.")
         elif safety == ActivitySafetyLevel.MODERATE:
             if has_asthma or has_allergies:
-                actions.append("Keep quick-relief inhaler accessible; monitor respiratory rhythm.")
+                actions.append("Keep physician-prescribed rescue inhaler accessible as directed; monitor respiratory comfort.")
                 actions.append("Prefer shaded green parks over busy traffic corridors.")
             else:
                 actions.append("Outdoor workouts acceptable; reduce intensity if airway dryness develops.")
@@ -218,7 +218,7 @@ class IntelligentRecommendationEngine:
                     reason="Children have a higher respiratory volume per kilogram of body weight, increasing relative inhalation of PM2.5.",
                     supporting_measurement=sup_m,
                     expected_benefit="Prevents mild pediatric airway irritation while allowing normal social and sports routines.",
-                    limitations="Asthmatic children may need preventative bronchodilator actuation prior to heavy playground games.",
+                    limitations="Asthmatic children should review their physician-prescribed asthma action plan with their doctor before intense physical activity.",
                 )
             )
         else:

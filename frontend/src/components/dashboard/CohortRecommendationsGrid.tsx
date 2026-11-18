@@ -79,7 +79,7 @@ export const CohortRecommendationsGrid: React.FC<CohortRecommendationsGridProps>
               {/* Recommended Action */}
               <div className="mb-3">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-800 block mb-1">
-                  Prescribed Action
+                  Recommended Action
                 </span>
                 <p className="text-slate-900 font-semibold leading-relaxed">
                   {item.recommended_action}

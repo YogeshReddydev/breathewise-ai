@@ -38,6 +38,16 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
       ? activeItem.cpcb_aqi
       : activeItem.aqi_us
     : null;
+  const activeColor = activeItem
+    ? isCPCB && activeItem.cpcb_color
+      ? activeItem.cpcb_color
+      : activeItem.color_hex
+    : '#10B981';
+  const activeCategory = activeItem
+    ? isCPCB
+      ? activeItem.cpcb_category || activeItem.category_label
+      : activeItem.category_label
+    : '';
 
   return (
     <div id="forecast" className="glass-card-elevated p-6 mt-8 relative overflow-hidden">
@@ -105,7 +115,7 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
           <div className="flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center font-mono font-bold text-lg text-white shadow-sm shrink-0"
-              style={{ backgroundColor: isCPCB && activeItem.cpcb_color ? activeItem.cpcb_color : activeItem.color_hex }}
+              style={{ backgroundColor: activeColor }}
             >
               {activeAQI}
             </div>
@@ -117,12 +127,12 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
                 <span
                   className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
                   style={{
-                    backgroundColor: `${activeItem.color_hex}15`,
-                    color: activeItem.color_hex,
-                    borderColor: `${activeItem.color_hex}40`,
+                    backgroundColor: `${activeColor}15`,
+                    color: activeColor,
+                    borderColor: `${activeColor}40`,
                   }}
                 >
-                  {isCPCB ? activeItem.cpcb_category || activeItem.category_label : activeItem.category_label}
+                  {activeCategory}
                 </span>
               </div>
               <p className="text-xs text-slate-600 mt-0.5">

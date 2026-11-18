@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -91,14 +92,32 @@ async def security_and_rate_limit_middleware(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(self), camera=(), microphone=()"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com data:; "
-        "img-src 'self' data: https:; "
-        "connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.vercel.app https://air-quality-api.open-meteo.com;"
+    # Environment-aware Content Security Policy (strict in production, flexible in development)
+    is_prod = (
+        settings.ENVIRONMENT.lower() == "production"
+        or os.environ.get("VERCEL") == "1"
+        or os.environ.get("VERCEL_ENV") == "production"
     )
+
+    if is_prod:
+        csp_header = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self' https://*.vercel.app https://air-quality-api.open-meteo.com;"
+        )
+    else:
+        csp_header = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.vercel.app https://air-quality-api.open-meteo.com;"
+        )
+    response.headers["Content-Security-Policy"] = csp_header
 
     return response
 

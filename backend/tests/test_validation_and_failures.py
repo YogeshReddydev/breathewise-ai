@@ -74,13 +74,27 @@ def test_invalid_user_coordinate_inputs():
     assert "Both latitude and longitude must be provided together" in res_lon_only.json()["detail"]
 
 
-def test_security_headers_present():
-    """Verify OWASP recommended security headers on all responses."""
+def test_security_headers_present(monkeypatch):
+    """Verify OWASP recommended security headers on all responses and environment-aware CSP."""
+    # Development mode check
+    monkeypatch.delenv("VERCEL", raising=False)
+    monkeypatch.delenv("VERCEL_ENV", raising=False)
     response = client.get("/health")
     assert response.status_code == 200
     assert response.headers.get("X-Content-Type-Options") == "nosniff"
     assert response.headers.get("X-Frame-Options") == "DENY"
     assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+    csp_dev = response.headers.get("Content-Security-Policy")
+    assert "localhost" in csp_dev
+    assert "'unsafe-inline'" in csp_dev
+
+    # Production mode check
+    monkeypatch.setenv("VERCEL_ENV", "production")
+    response_prod = client.get("/health")
+    csp_prod = response_prod.headers.get("Content-Security-Policy")
+    assert "localhost" not in csp_prod
+    assert "127.0.0.1" not in csp_prod
+    assert "script-src 'self';" in csp_prod
 
 
 def test_in_memory_rate_limiting():

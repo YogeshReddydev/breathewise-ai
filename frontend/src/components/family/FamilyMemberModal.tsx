@@ -248,7 +248,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Uses quick-relief inhaler; runs early morning"
+              placeholder="e.g. Has asthma action plan; runs early morning"
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-600"
             />
           </div>

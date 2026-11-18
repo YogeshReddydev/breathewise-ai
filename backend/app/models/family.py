@@ -128,7 +128,7 @@ def get_default_family_group() -> FamilyGroup:
                 activity_preference=ActivityPreference.LIGHT_WALKING,
                 vulnerability_tier=VulnerabilityTier.HIGH_RISK,
                 cohort=TargetCohort.CHILDREN,
-                notes="Fictional pediatric asthma profile; illustrates school recess & inhaler guidance.",
+                notes="Fictional pediatric asthma profile; illustrates school recess & asthma action plan guidance.",
                 is_demo=True,
             ),
             FamilyMember(

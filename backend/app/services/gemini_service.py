@@ -250,7 +250,7 @@ Respond strictly in valid JSON format with keys:
         elif any(w in msg_lower for w in ["asthma", "child", "children", "kid", "school", "recess", "student", "senior", "elderly"]):
             reply = (
                 f"Vulnerable Cohort Advisory for {loc_name} (AQI {aqi_val}):\n\n"
-                f"- Children & Students: Due to developing airways and higher ventilation per kilogram, children absorb more particulate matter. Keep quick-relief inhalers accessible and shift playground games indoors if AQI exceeds 100.\n"
+                f"- Children & Students: Due to developing airways and higher ventilation per kilogram, children absorb more particulate matter. Keep physician-prescribed rescue inhalers or asthma action plans accessible as directed, and shift playground games indoors if AQI exceeds 100.\n"
                 f"- Older Adults: Particulate exposure increases vascular resistance and blood pressure. Limit outdoor physical exertion and stay in air-filtered spaces.\n"
                 f"- Precaution: This guidance is preventive; please consult your pediatrician or physician for individualized clinical action plans."
             )
