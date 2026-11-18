@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  --bg-primary: #070D1E;
-  --bg-card: #0D162B;
-  --bg-card-hover: #121F3D;
+  --bg-primary: #050B14;
+  --bg-card: #0A1128;
+  --bg-card-hover: #0F1A3B;
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-glow: rgba(16, 185, 129, 0.25);
   
@@ -35,7 +35,7 @@ code, .font-mono {
 
 /* Glassmorphic cards */
 .glass-panel {
-  background: rgba(13, 22, 43, 0.75);
+  background: rgba(10, 17, 40, 0.8);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
@@ -43,7 +43,7 @@ code, .font-mono {
 }
 
 .glass-panel-hover:hover {
-  background: rgba(18, 31, 61, 0.85);
+  background: rgba(15, 26, 59, 0.88);
   border-color: rgba(255, 255, 255, 0.14);
 }
 
@@ -61,7 +61,7 @@ code, .font-mono {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #070D1E;
+  background: #050B14;
 }
 ::-webkit-scrollbar-thumb {
   background: #1E293B;
@@ -96,4 +96,14 @@ code, .font-mono {
   top: 0; left: 0; right: 0; bottom: 0;
   background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.08), transparent);
   animation: breezeFlow 4s linear infinite;
+}
+
+/* Reduced Motion Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

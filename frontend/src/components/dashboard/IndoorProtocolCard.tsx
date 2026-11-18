@@ -10,7 +10,7 @@ export const IndoorProtocolCard: React.FC<IndoorProtocolCardProps> = ({ protocol
   if (!protocol) return null;
 
   return (
-    <div className="glass-panel p-6 mt-8 border border-cyan-500/20 bg-gradient-to-br from-cyan-950/15 via-[#0D162B] to-[#0D162B]">
+    <div className="glass-panel p-6 mt-8 border border-cyan-500/20 bg-gradient-to-br from-cyan-950/15 via-[#0A1128] to-[#0A1128]">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-cyan-400" />

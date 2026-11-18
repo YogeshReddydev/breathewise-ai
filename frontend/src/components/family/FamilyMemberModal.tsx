@@ -146,7 +146,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Priya Sharma"
-                className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
+                className="w-full bg-[#0A1128] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
               />
             </div>
             <div>
@@ -157,7 +157,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
                 value={relationship}
                 onChange={(e) => setRelationship(e.target.value)}
                 placeholder="e.g. Daughter, Self, Father"
-                className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
+                className="w-full bg-[#0A1128] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
               />
             </div>
           </div>
@@ -172,7 +172,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
                 max={120}
                 value={age}
                 onChange={(e) => setAge(Number(e.target.value))}
-                className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono focus-visible:ring-2 focus-visible:ring-cyan-400"
+                className="w-full bg-[#0A1128] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono focus-visible:ring-2 focus-visible:ring-cyan-400"
               />
             </div>
             <div>
@@ -181,7 +181,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
                 id="member-cohort"
                 value={cohort}
                 onChange={(e) => setCohort(e.target.value as TargetCohort)}
-                className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
+                className="w-full bg-[#0A1128] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
               >
                 <option value="general_household">General Household</option>
                 <option value="children">Family with Children</option>
@@ -199,7 +199,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
               id="member-activity"
               value={activity}
               onChange={(e) => setActivity(e.target.value as ActivityPreference)}
-              className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
+              className="w-full bg-[#0A1128] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
             >
               <option value="light_walking">Light Walking / Casual</option>
               <option value="outdoor_running">Outdoor Running / Endurance Cardio</option>
@@ -230,7 +230,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
                     className={`p-2.5 rounded-xl text-left border transition-all flex items-center justify-between focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                       checked
                         ? 'bg-emerald-500/20 border-emerald-500/50 text-white font-medium'
-                        : 'bg-[#0D162B] border-white/5 text-slate-400 hover:text-slate-200'
+                        : 'bg-[#0A1128] border-white/5 text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     <span>{item.label}</span>
@@ -249,7 +249,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Uses inhaler before exercise; runs at 7 AM"
-              className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
+              className="w-full bg-[#0A1128] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400"
             />
           </div>
 

@@ -65,7 +65,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 bg-[#070D1E]/95 backdrop-blur-md border-b border-white/10 px-4 lg:px-8 py-3">
+    <header className="sticky top-0 z-40 bg-[#050B14]/95 backdrop-blur-md border-b border-white/10 px-4 lg:px-8 py-3">
       {/* Offline Alert Strip */}
       {isOffline && (
         <div className="bg-orange-500/20 text-orange-300 text-xs py-1 px-4 text-center font-medium flex items-center justify-center gap-2 mb-2 rounded-lg border border-orange-500/30">
@@ -121,7 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => query.length >= 2 && setIsOpen(true)}
-                className="w-full bg-[#0D162B] border border-white/10 rounded-xl pl-10 pr-20 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all shadow-inner focus-visible:ring-2 focus-visible:ring-cyan-400"
+                className="w-full bg-[#0A1128] border border-white/10 rounded-xl pl-10 pr-20 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all shadow-inner focus-visible:ring-2 focus-visible:ring-cyan-400"
               />
               <button
                 onClick={onRefresh}
@@ -135,7 +135,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Dropdown Results */}
             {isOpen && results.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[#0D162B] border border-white/15 rounded-xl shadow-2xl overflow-hidden z-50" role="listbox">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[#0A1128] border border-white/15 rounded-xl shadow-2xl overflow-hidden z-50" role="listbox">
                 <div className="p-1.5">
                   {results.map((loc, idx) => (
                     <button
@@ -189,7 +189,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
           
           {/* AQI Standard Selector Pills */}
-          <div className="flex items-center bg-[#0D162B] p-0.5 rounded-xl border border-white/10 text-[11px]" role="group" aria-label="Air Quality Index standard selector">
+          <div className="flex items-center bg-[#0A1128] p-0.5 rounded-xl border border-white/10 text-[11px]" role="group" aria-label="Air Quality Index standard selector">
             <button
               onClick={() => onSelectStandard('cpcb')}
               title="Indian CPCB National AQI standard"
@@ -239,7 +239,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 shadow-md focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
               isChatOpen
                 ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold shadow-cyan-500/20'
-                : 'bg-[#0D162B] text-slate-200 hover:bg-[#152345] border border-white/10 hover:border-emerald-500/40'
+                : 'bg-[#0A1128] text-slate-200 hover:bg-[#0F1A3B] border border-white/10 hover:border-emerald-500/40'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" />

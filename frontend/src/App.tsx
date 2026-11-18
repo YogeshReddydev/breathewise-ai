@@ -8,6 +8,7 @@ import { OptimalWindowCard } from './components/dashboard/OptimalWindowCard';
 import { IndoorProtocolCard } from './components/dashboard/IndoorProtocolCard';
 import { CohortRecommendationsGrid } from './components/dashboard/CohortRecommendationsGrid';
 import { SustainableLivingSection } from './components/sustainability/SustainableLivingSection';
+import { CommunityIntelligenceCard } from './components/dashboard/CommunityIntelligenceCard';
 import { ProfileSelector } from './components/family/ProfileSelector';
 import { MemberHealthAdvisories } from './components/family/MemberHealthAdvisories';
 import { FamilyMemberModal } from './components/family/FamilyMemberModal';
@@ -49,7 +50,7 @@ export const App: React.FC = () => {
   } = useAQI('New Delhi, India', family || undefined);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#070D1E] text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen flex flex-col bg-[#050B14] text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200">
       
       {/* Top Navigation */}
       <Navbar
@@ -155,7 +156,13 @@ export const App: React.FC = () => {
             {/* 7. Sustainable Living & Green Commuting Calculator */}
             <SustainableLivingSection currentAQI={reading.aqi_us} />
 
-            {/* 8. Family Profile Selector */}
+            {/* 8. Community Intelligence & Civic Airshed Defense */}
+            <CommunityIntelligenceCard
+              reading={reading}
+              onOpenChat={() => setIsChatOpen(true)}
+            />
+
+            {/* 9. Family Profile Selector */}
             <ProfileSelector
               family={family}
               selectedMemberId={selectedMemberId}

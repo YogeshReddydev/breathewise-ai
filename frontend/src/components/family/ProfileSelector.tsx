@@ -168,8 +168,8 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
                 }}
                 className={`p-4 rounded-xl text-left transition-all duration-200 border relative group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   isSelected
-                    ? 'bg-[#142347] border-emerald-500/80 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/40'
-                    : 'bg-[#0D162B] border-white/5 hover:bg-[#121E3B] hover:border-white/15'
+                    ? 'bg-[#0F1A3B] border-emerald-500/80 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/40'
+                    : 'bg-[#0A1128] border-white/5 hover:bg-[#0F1A3B] hover:border-white/15'
                 }`}
               >
                 {/* Delete member button on non-demo profiles or demo profiles */}

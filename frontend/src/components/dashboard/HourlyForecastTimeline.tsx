@@ -45,7 +45,7 @@ export const HourlyForecastTimeline: React.FC<HourlyForecastTimelineProps> = ({
 
         {/* 24h vs 48h Toggle Buttons */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-[#070D1E] p-1 rounded-xl border border-white/10 text-xs" role="group" aria-label="Forecast timeframe selector">
+          <div className="flex items-center bg-[#050B14] p-1 rounded-xl border border-white/10 text-xs" role="group" aria-label="Forecast timeframe selector">
             <button
               onClick={() => onSelectHours(24)}
               aria-label="24-Hour Horizon"

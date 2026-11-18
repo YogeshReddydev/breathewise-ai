@@ -71,7 +71,7 @@ export const SustainableLivingSection: React.FC<SustainableLivingSectionProps> =
   }, [distance, baselineMode, targetMode, tripsPerWeek, currentAQI]);
 
   return (
-    <div className="glass-panel p-6 mt-8 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/15 via-[#0D162B] to-[#0D162B]">
+    <div className="glass-panel p-6 mt-8 border border-emerald-500/20 bg-gradient-to-br from-emerald-950/15 via-[#0A1128] to-[#0A1128]">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
@@ -110,7 +110,7 @@ export const SustainableLivingSection: React.FC<SustainableLivingSectionProps> =
               <select
                 value={baselineMode}
                 onChange={(e) => setBaselineMode(e.target.value as TransportMode)}
-                className="w-full bg-[#070D1E] border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-[#050B14] border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-cyan-500"
               >
                 <option value="petrol_car">Solo Petrol Car (170 g/km)</option>
                 <option value="diesel_car">Solo Diesel Car (155 g/km)</option>
@@ -125,7 +125,7 @@ export const SustainableLivingSection: React.FC<SustainableLivingSectionProps> =
               <select
                 value={targetMode}
                 onChange={(e) => setTargetMode(e.target.value as TransportMode)}
-                className="w-full bg-[#070D1E] border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-[#050B14] border border-white/10 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-emerald-500"
               >
                 <option value="metro_train">Electric Metro / Rail (22 g/km)</option>
                 <option value="city_bus">Public City Bus (35 g/km)</option>
@@ -208,7 +208,7 @@ export const SustainableLivingSection: React.FC<SustainableLivingSectionProps> =
               </div>
 
               {/* Tailpipe PM2.5 avoidance */}
-              <div className="flex items-center justify-between text-xs bg-[#070D1E] px-3.5 py-2 rounded-lg border border-white/5">
+              <div className="flex items-center justify-between text-xs bg-[#050B14] px-3.5 py-2 rounded-lg border border-white/5">
                 <span className="text-slate-400">Direct Roadway Exhaust Avoidance:</span>
                 <span className="font-mono text-emerald-400 font-bold">
                   {result.tailpipe_pm2_5_avoided_g} grams of combustion PM2.5 saved

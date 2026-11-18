@@ -101,14 +101,14 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="assistant-title"
-      className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] bg-[#091124] border-l border-white/10 shadow-2xl flex flex-col transition-all duration-300"
+      className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] bg-[#0A1128] border-l border-white/10 shadow-2xl flex flex-col transition-all duration-300"
     >
       
       {/* Header */}
-      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#0B152E]">
+      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#050B14]/80">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-cyan-400 p-0.5">
-            <div className="w-full h-full bg-[#0B132B] rounded-[6px] flex items-center justify-center">
+            <div className="w-full h-full bg-[#050B14] rounded-[6px] flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-cyan-400" aria-hidden="true" />
             </div>
           </div>
@@ -166,7 +166,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
                 className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed ${
                   isUser
                     ? 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-br-none shadow-md'
-                    : 'bg-[#101D3D] text-slate-200 border border-white/10 rounded-bl-none shadow-md'
+                    : 'bg-[#0F1A3B] text-slate-200 border border-white/10 rounded-bl-none shadow-md'
                 }`}
               >
                 <div className="whitespace-pre-wrap">{msg.text}</div>
@@ -193,7 +193,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
             <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
               <Bot className="w-4 h-4" aria-hidden="true" />
             </div>
-            <div className="bg-[#101D3D] text-slate-300 text-xs px-4 py-2.5 rounded-2xl border border-white/10 flex items-center gap-2">
+            <div className="bg-[#0F1A3B] text-slate-300 text-xs px-4 py-2.5 rounded-2xl border border-white/10 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
               <span>Analyzing atmospheric &amp; clinical parameters...</span>
             </div>
@@ -204,7 +204,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
       </div>
 
       {/* Suggested prompts */}
-      <div className="p-3 border-t border-white/5 bg-[#080E1F]">
+      <div className="p-3 border-t border-white/5 bg-[#050B14]">
         <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block mb-2">
           Suggested Queries:
         </span>
@@ -223,7 +223,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
       </div>
 
       {/* Input bar */}
-      <div className="p-3 bg-[#0B152E] border-t border-white/10">
+      <div className="p-3 bg-[#0A1128] border-t border-white/10">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -238,7 +238,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
-            className="flex-1 bg-[#070D1E] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 focus-visible:ring-2 focus-visible:ring-cyan-400"
+            className="flex-1 bg-[#050B14] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 focus-visible:ring-2 focus-visible:ring-cyan-400"
           />
           <button
             type="submit"

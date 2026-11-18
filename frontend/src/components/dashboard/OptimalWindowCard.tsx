@@ -10,7 +10,7 @@ interface OptimalWindowCardProps {
 export const OptimalWindowCard: React.FC<OptimalWindowCardProps> = ({ forecast }) => {
   if (!forecast || !forecast.best_window_start) {
     return (
-      <div className="glass-panel p-5 mt-8 border border-white/10 bg-[#0D162B] flex items-center justify-between">
+      <div className="glass-panel p-5 mt-8 border border-white/10 bg-[#0A1128] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Clock className="w-5 h-5 text-cyan-400 animate-pulse" />
           <div>
@@ -37,10 +37,10 @@ export const OptimalWindowCard: React.FC<OptimalWindowCardProps> = ({ forecast }
       {/* Best Outdoor Activity Window */}
       <div className={`glass-panel p-5 border relative overflow-hidden transition-all ${
         isSevereSmog
-          ? 'border-amber-500/40 bg-gradient-to-br from-amber-950/30 via-[#0D162B] to-[#0D162B]'
+          ? 'border-amber-500/40 bg-gradient-to-br from-amber-950/30 via-[#0A1128] to-[#0A1128]'
           : isModerateUnhealthy
-          ? 'border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 via-[#0D162B] to-[#0D162B]'
-          : 'border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 via-[#0D162B] to-[#0D162B]'
+          ? 'border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 via-[#0A1128] to-[#0A1128]'
+          : 'border-emerald-500/30 bg-gradient-to-br from-emerald-950/20 via-[#0A1128] to-[#0A1128]'
       }`}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ export const OptimalWindowCard: React.FC<OptimalWindowCardProps> = ({ forecast }
       </div>
 
       {/* Peak Exposure Window */}
-      <div className="glass-panel p-5 border border-orange-500/30 relative overflow-hidden bg-gradient-to-br from-orange-950/20 via-[#0D162B] to-[#0D162B]">
+      <div className="glass-panel p-5 border border-orange-500/30 relative overflow-hidden bg-gradient-to-br from-orange-950/20 via-[#0A1128] to-[#0A1128]">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
