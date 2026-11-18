@@ -20,7 +20,7 @@
 - 🌱 **Sustainable Living & Commuter Emissions Calculator**: Interactive calculator displaying single-trip, weekly, and annual $\text{CO}_2$ savings plus tailpipe $\text{PM}_{2.5}$ reductions, correlated with real-time ambient air safety.
 - 🛡️ **Family Protection Mode**: Create, edit, and delete real household members with voluntary sensitivity selections. Demonstration profiles (Marcus, Elena, Leo, Sophia) are badged as fictional simulation data with one-click clear and restore controls.
 - 🕒 **24-Hour & 48-Hour Extended Horizon**: Extended numerical simulation curve with clean-air and peak pollution window highlights.
-- 🧪 **Complete Automated Test Suite**: 47 backend pytest tests and 5 frontend vitest tests passing with 100% success (including OWASP security headers, in-memory rate limiting, and 8 dedicated AI safety evaluation scenarios).
+- 🧪 **Complete Automated Test Suite**: 50 backend pytest tests and 10 frontend vitest tests passing with 100% success (including OWASP security headers, in-memory rate limiting, 8 dedicated AI safety evaluation scenarios, WAQI CPCB calculation, stale cache failover, and date-time formatters).
 
 ---
 
@@ -114,7 +114,7 @@ The frontend dashboard will be available at: `http://localhost:5173`.
 
 ## Automated Testing Suite
 
-### Run All Backend Tests (47 Passed)
+### Run All Backend Tests (50 Passed)
 ```bash
 cd backend
 python -m pytest
@@ -126,17 +126,24 @@ Validates:
 - Transport emissions and particulate reduction formulas.
 - Fictional demonstration profile handling and custom member CRUD.
 - Input validation, coordinate bounds checking, and query sanitization.
-- Provider failover and error handling.
+- Provider failover, WAQI CPCB calculation, and stale cache failover during outages.
 - OWASP security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`).
 - Sliding-window in-memory rate limiting to protect public endpoints.
 - 8 dedicated AI safety evaluation scenarios (smog myth refutation, vulnerable cohort protections, zero data fabrication).
 
-### Run All Frontend Tests (5 Passed)
+### Run All Frontend Tests (10 Passed)
 ```bash
 cd frontend
 npm test
 ```
-Validates EPA bands, CPCB NAQI colors/categories, European AQI bands, and WHO 2021 air quality thresholds.
+Validates:
+- US EPA AQI bands and category classification.
+- Indian CPCB National AQI categories and color hexes.
+- European AQI standard mapping.
+- WHO 2021 air quality guideline limits and percentage calculations.
+- Dynamic standard switching without breakpoint conflation.
+- Edge case boundary conditions (0 and 500 AQI).
+- Hourly forecast and date-time formatters.
 
 ### Run Production Build
 ```bash

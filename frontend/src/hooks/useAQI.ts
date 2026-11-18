@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AQIReading, AQIStandard, AirQualityForecast } from '../types/aqi';
 import { ComprehensiveRecommendation } from '../types/recommendations';
 import { FamilyGroup } from '../types/family';
@@ -30,6 +30,9 @@ export function useAQI(initialCity: string = 'New Delhi', family?: FamilyGroup) 
     };
   }, []);
 
+  const readingRef = useRef<AQIReading | null>(null);
+  readingRef.current = reading;
+
   const refreshData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -46,11 +49,11 @@ export function useAQI(initialCity: string = 'New Delhi', family?: FamilyGroup) 
       setReading(currentReading);
       setForecast(forecastData);
       setRecommendations(recData);
-      setIsStale(false);
+      setIsStale(currentReading.is_stale || false);
     } catch (err: any) {
       console.error('Error fetching AQI intelligence:', err);
       // If we already have a reading, keep it but mark as stale
-      if (reading) {
+      if (readingRef.current) {
         setIsStale(true);
         setError('Displaying cached atmospheric telemetry. Reconnecting to live provider...');
       } else {
@@ -59,7 +62,7 @@ export function useAQI(initialCity: string = 'New Delhi', family?: FamilyGroup) 
     } finally {
       setLoading(false);
     }
-  }, [city, coordinates, standard, forecastHours, family, reading]);
+  }, [city, coordinates, standard, forecastHours, family]);
 
   useEffect(() => {
     refreshData();

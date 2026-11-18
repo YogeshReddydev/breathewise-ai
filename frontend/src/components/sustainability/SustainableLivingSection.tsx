@@ -147,8 +147,12 @@ export const SustainableLivingSection: React.FC<SustainableLivingSectionProps> =
                 min={1}
                 max={60}
                 value={distance}
+                aria-label="One-Way Commute Distance in Kilometers"
+                aria-valuenow={distance}
+                aria-valuemin={1}
+                aria-valuemax={60}
                 onChange={(e) => setDistance(Number(e.target.value))}
-                className="w-full accent-emerald-500"
+                className="w-full accent-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none"
               />
             </div>
 
@@ -163,8 +167,12 @@ export const SustainableLivingSection: React.FC<SustainableLivingSectionProps> =
                 min={2}
                 max={20}
                 value={tripsPerWeek}
+                aria-label="Commute Trips Per Week"
+                aria-valuenow={tripsPerWeek}
+                aria-valuemin={2}
+                aria-valuemax={20}
                 onChange={(e) => setTripsPerWeek(Number(e.target.value))}
-                className="w-full accent-cyan-500"
+                className="w-full accent-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
               />
             </div>
 

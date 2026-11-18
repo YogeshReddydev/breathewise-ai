@@ -241,6 +241,7 @@ class OpenMeteoAQIProvider(BaseAQIProvider):
         # Calculate optimal & worst outdoor activity windows
         best_window_start, best_window_end = None, None
         worst_window_start, worst_window_end = None, None
+        best_window_aqi, worst_window_aqi = None, None
 
         if len(hourly_items) >= 4:
             # 3-hour sliding windows
@@ -249,14 +250,16 @@ class OpenMeteoAQIProvider(BaseAQIProvider):
                 avg_aqi = (hourly_items[w].aqi_us + hourly_items[w + 1].aqi_us + hourly_items[w + 2].aqi_us) / 3
                 window_scores.append((avg_aqi, w))
 
-            best_w = min(window_scores, key=lambda x: x[0])[1]
-            worst_w = max(window_scores, key=lambda x: x[0])[1]
+            best_score, best_w = min(window_scores, key=lambda x: x[0])
+            worst_score, worst_w = max(window_scores, key=lambda x: x[0])
 
             best_window_start = hourly_items[best_w].time
             best_window_end = hourly_items[min(best_w + 3, len(hourly_items) - 1)].time
+            best_window_aqi = int(round(best_score))
 
             worst_window_start = hourly_items[worst_w].time
             worst_window_end = hourly_items[min(worst_w + 3, len(hourly_items) - 1)].time
+            worst_window_aqi = int(round(worst_score))
 
         avg_aqi = int(sum(item.aqi_us for item in hourly_items) / len(hourly_items)) if hourly_items else 0
 
@@ -267,8 +270,10 @@ class OpenMeteoAQIProvider(BaseAQIProvider):
             hourly=hourly_items,
             best_window_start=best_window_start,
             best_window_end=best_window_end,
+            best_window_aqi=best_window_aqi,
             worst_window_start=worst_window_start,
             worst_window_end=worst_window_end,
+            worst_window_aqi=worst_window_aqi,
             avg_next_24h_aqi=avg_aqi,
             forecast_horizon_hours=hours,
             data_type="forecast",

@@ -14,7 +14,43 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   value,
   unit,
 }) => {
-  if (value === null || value === undefined) return null;
+  const isUnmonitored = value === null || value === undefined;
+
+  if (isUnmonitored) {
+    return (
+      <div className="glass-panel p-4 flex flex-col justify-between border border-dashed border-white/10 opacity-70">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <span className="text-sm font-bold text-slate-300">{name}</span>
+            <p className="text-[11px] text-slate-400 truncate max-w-[140px]">{fullName}</p>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded font-mono font-medium bg-slate-800 text-slate-400 border border-white/5">
+            Unmonitored
+          </span>
+        </div>
+
+        <div className="my-2">
+          <div className="flex items-baseline gap-1">
+            <span className="text-xl font-bold tracking-tight text-slate-400 font-mono">
+              N/A
+            </span>
+            <span className="text-xs text-slate-500 font-mono">({unit})</span>
+          </div>
+          <p className="text-[10px] text-slate-400 mt-0.5">Sensor telemetry not reporting</p>
+        </div>
+
+        <div>
+          <div className="w-full bg-slate-800/40 rounded-full h-1.5 overflow-hidden">
+            <div className="h-full rounded-full bg-slate-700 w-0" />
+          </div>
+          <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+            <span>0</span>
+            <span>No data</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const { percent, exceeds, limit } = getWhoThresholdPercentage(name, value);
   const barWidth = Math.min(100, Math.max(5, percent));

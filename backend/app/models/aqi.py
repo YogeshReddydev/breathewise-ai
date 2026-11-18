@@ -115,6 +115,7 @@ class AQIReading(BaseModel):
     # Telemetry provenance & observation metadata
     data_type: str = Field(default="observation", description="'observation' or 'forecast'")
     source_attribution: str = Field(default="Open-Meteo High-Resolution Atmospheric Models")
+    is_stale: bool = Field(default=False, description="True if telemetry is retrieved from cache during upstream outage")
     measurement_units: Dict[str, str] = Field(
         default_factory=lambda: {
             "pm2_5": "µg/m³",
@@ -150,8 +151,10 @@ class AirQualityForecast(BaseModel):
     hourly: List[HourlyForecastItem]
     best_window_start: Optional[str] = None
     best_window_end: Optional[str] = None
+    best_window_aqi: Optional[int] = None
     worst_window_start: Optional[str] = None
     worst_window_end: Optional[str] = None
+    worst_window_aqi: Optional[int] = None
     avg_next_24h_aqi: int = 0
     forecast_horizon_hours: int = 24
     data_type: str = "forecast"

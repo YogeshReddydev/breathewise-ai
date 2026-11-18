@@ -64,6 +64,7 @@ export interface AQIReading {
   // Provenance & observation metadata
   data_type?: string;
   source_attribution?: string;
+  is_stale?: boolean;
   measurement_units?: Record<string, string>;
 }
 
@@ -89,8 +90,10 @@ export interface AirQualityForecast {
   hourly: HourlyForecastItem[];
   best_window_start?: string | null;
   best_window_end?: string | null;
+  best_window_aqi?: number | null;
   worst_window_start?: string | null;
   worst_window_end?: string | null;
+  worst_window_aqi?: number | null;
   avg_next_24h_aqi: number;
   forecast_horizon_hours?: number;
   data_type?: string;

@@ -66,4 +66,26 @@ describe('AQI Calculator Utilities', () => {
     expect(safeRes.percent).toBe(50);
     expect(safeRes.exceeds).toBe(false);
   });
+
+  it('correctly maps standard category and colors dynamically', () => {
+    // CPCB Moderate (150) vs US EPA Unhealthy (160)
+    const cpcbMod = getStandardCategoryAndColor('cpcb', 150);
+    expect(cpcbMod.category).toBe('Moderate');
+
+    const epaUnhealthy = getStandardCategoryAndColor('us_epa', 160);
+    expect(epaUnhealthy.category).toBe('Unhealthy');
+    expect(epaUnhealthy.colorHex).toBe('#EF4444');
+
+    const eaVeryPoor = getStandardCategoryAndColor('european', 120);
+    expect(eaVeryPoor.category).toBe('Very Poor');
+  });
+
+  it('handles edge case zero and extreme maximum thresholds safely', () => {
+    const zeroRes = getWhoThresholdPercentage('PM10', 0);
+    expect(zeroRes.percent).toBe(0);
+    expect(zeroRes.exceeds).toBe(false);
+
+    const extremeEpa = getCategoryFromAQI(500);
+    expect(extremeEpa).toBe('hazardous');
+  });
 });

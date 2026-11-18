@@ -7,6 +7,7 @@ from app.models.aqi import (
     AQIReading,
     AQIStandard,
     AirQualityForecast,
+    CPCBReading,
     LocationSearchResult,
     PollutantBreakdown,
     USEPAReading,
@@ -71,6 +72,15 @@ class WAQIAQIProvider(BaseAQIProvider):
 
         # CPCB computation
         cpcb_res = calculate_cpcb_aqi(pm2_5=pm2_5, pm10=pm10, no2=no2, o3=o3, so2=so2, co=co)
+        cpcb_reading = CPCBReading(
+            calculable=cpcb_res["calculable"],
+            aqi=cpcb_res["aqi"],
+            category=cpcb_res["category"],
+            color_hex=cpcb_res["color_hex"],
+            dominant_pollutant=cpcb_res["dominant_pollutant"],
+            sub_indices=cpcb_res["sub_indices"],
+            limitation_note=cpcb_res["limitation_note"],
+        )
 
         return AQIReading(
             aqi_us=aqi_val,
@@ -92,6 +102,7 @@ class WAQIAQIProvider(BaseAQIProvider):
             ),
             provider=self.name,
             active_standard=standard or AQIStandard.US_EPA,
+            cpcb=cpcb_reading,
             us_epa=USEPAReading(
                 aqi=aqi_val,
                 category=category,

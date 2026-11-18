@@ -70,10 +70,23 @@ class ProviderRegistry:
         except Exception as e:
             logger.warning(f"Provider {provider.name} failed: {e}. Attempting failover to open-meteo.")
             if provider.name != "open-meteo" and "open-meteo" in self._providers:
-                fallback = self._providers["open-meteo"]
-                reading = await fallback.get_current_aqi(lat, lon, location_name, standard)
-                self._cache[cache_key] = (now, reading)
-                return reading
+                try:
+                    fallback = self._providers["open-meteo"]
+                    reading = await fallback.get_current_aqi(lat, lon, location_name, standard)
+                    self._cache[cache_key] = (now, reading)
+                    return reading
+                except Exception as fallback_err:
+                    logger.warning(f"Fallback provider open-meteo also failed: {fallback_err}")
+
+            # Network/upstream outage resilience: serve stale cached reading if present
+            if cache_key in self._cache:
+                ts, cached_data = self._cache[cache_key]
+                logger.info(f"Serving stale cached observation for {lat}, {lon} due to provider downtime.")
+                # Return copy with is_stale set to True
+                stale_reading = cached_data.model_copy()
+                stale_reading.is_stale = True
+                return stale_reading
+
             raise
 
     async def get_forecast(

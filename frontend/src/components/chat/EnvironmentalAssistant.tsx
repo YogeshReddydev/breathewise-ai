@@ -43,6 +43,17 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
+  // Close assistant on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const handleSend = async (messageText: string) => {
     const text = messageText.trim();
     if (!text || loading) return;
@@ -86,18 +97,23 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] bg-[#091124] border-l border-white/10 shadow-2xl flex flex-col transition-all duration-300">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assistant-title"
+      className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] bg-[#091124] border-l border-white/10 shadow-2xl flex flex-col transition-all duration-300"
+    >
       
       {/* Header */}
       <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#0B152E]">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-cyan-400 p-0.5">
             <div className="w-full h-full bg-[#0B132B] rounded-[6px] flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <Sparkles className="w-4 h-4 text-cyan-400" aria-hidden="true" />
             </div>
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+            <h3 id="assistant-title" className="text-sm font-bold text-white flex items-center gap-1.5">
               BreatheWise Assistant
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                 Gemini AI
@@ -109,9 +125,10 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
 
         <button
           onClick={onClose}
-          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          aria-label="Close environmental assistant"
+          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
       </div>
 
@@ -131,7 +148,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
       )}
 
       {/* Message Feed */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" aria-live="polite">
         {messages.map((msg) => {
           const isUser = msg.sender === 'user';
           return (
@@ -141,7 +158,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
             >
               {!isUser && (
                 <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <Bot className="w-4 h-4" />
+                  <Bot className="w-4 h-4" aria-hidden="true" />
                 </div>
               )}
 
@@ -164,7 +181,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
 
               {isUser && (
                 <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0 mt-0.5">
-                  <User className="w-4 h-4" />
+                  <User className="w-4 h-4" aria-hidden="true" />
                 </div>
               )}
             </div>
@@ -174,7 +191,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
         {loading && (
           <div className="flex gap-3 justify-start items-center">
             <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-              <Bot className="w-4 h-4" />
+              <Bot className="w-4 h-4" aria-hidden="true" />
             </div>
             <div className="bg-[#101D3D] text-slate-300 text-xs px-4 py-2.5 rounded-2xl border border-white/10 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
@@ -188,7 +205,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
 
       {/* Suggested prompts */}
       <div className="p-3 border-t border-white/5 bg-[#080E1F]">
-        <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block mb-2">
+        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block mb-2">
           Suggested Queries:
         </span>
         <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
@@ -197,7 +214,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
               key={idx}
               onClick={() => handleSend(q)}
               disabled={loading}
-              className="text-[11px] text-left px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-white/5 transition-colors disabled:opacity-50"
+              className="text-[11px] text-left px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-white/5 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
             >
               {q}
             </button>
@@ -216,18 +233,20 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
         >
           <input
             type="text"
+            aria-label="Ask questions about air quality, health guidance, or transport options"
             placeholder="Ask about air safety, transit emissions, Leo's asthma..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
-            className="flex-1 bg-[#070D1E] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/60"
+            className="flex-1 bg-[#070D1E] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 focus-visible:ring-2 focus-visible:ring-cyan-400"
           />
           <button
             type="submit"
+            aria-label="Send message to assistant"
             disabled={!input.trim() || loading}
-            className="p-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 hover:brightness-110 disabled:opacity-40 transition-all"
+            className="p-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 hover:brightness-110 disabled:opacity-40 transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-4 h-4" aria-hidden="true" />
           </button>
         </form>
       </div>

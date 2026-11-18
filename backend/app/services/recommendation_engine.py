@@ -427,8 +427,18 @@ class IntelligentRecommendationEngine:
             headline = f"Severe Environmental Health Advisory ({active_std_name})"
             summary = "Emergency health conditions. All household members must shelter in clean indoor spaces with high-efficiency air purification."
 
-        best_window = forecast.best_window_start if forecast else "Morning (06:00 - 09:00)"
-        worst_window = forecast.worst_window_start if forecast else "Afternoon (14:00 - 18:00)"
+        if forecast and forecast.best_window_start:
+            if (forecast.best_window_aqi and forecast.best_window_aqi > 200) or aqi > 200:
+                best_window = f"{forecast.best_window_start} (Caution: AQI remains severe at {forecast.best_window_aqi or aqi}; avoid outdoor exertion)"
+            else:
+                best_window = forecast.best_window_start
+            worst_window = forecast.worst_window_start or "Late afternoon / peak congestion"
+        elif aqi > 200:
+            best_window = "No safe outdoor exercise window (Severe pollution / winter smog)"
+            worst_window = "Early morning & late night (Atmospheric inversion smog trap)"
+        else:
+            best_window = "Morning (06:00 - 09:00)"
+            worst_window = "Late afternoon (14:00 - 18:00)"
 
         return ComprehensiveRecommendation(
             overall_risk_score=overall_risk,
