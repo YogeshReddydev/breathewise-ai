@@ -299,3 +299,4 @@ export const CommunityIntelligenceCard: React.FC<CommunityIntelligenceCardProps>
     </div>
   );
 };
+

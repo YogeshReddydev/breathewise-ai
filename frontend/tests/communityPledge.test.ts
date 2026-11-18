@@ -49,3 +49,4 @@ describe('Community Intelligence & Aerosol Diagnostics', () => {
     expect(getGrapStage(45)).toBe('Normal / Baseline');
   });
 });
+

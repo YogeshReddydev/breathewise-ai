@@ -65,5 +65,6 @@
   4. Show the strict medical safety guardrail intercepting the request.
 - **Narration:**
   > "Finally, our conversational assistant powered by Google Gemini 2.5 Flash integrates real-time telemetry and family context. When asked about outdoor sports, it delivers grounded, practical advice. And with our strict medical safety guardrails, any attempt to ask for drug dosages or clinical prescriptions is immediately redirected to medical professionals.
-  > With 89 passing automated tests, complete WCAG 2.1 AA accessibility, and a sub-1 megabyte repository, BreatheWise AI delivers real environmental intelligence. Thank you."
+  > With 90 passing automated tests, complete WCAG 2.1 AA accessibility, and a sub-1 megabyte repository, BreatheWise AI delivers real environmental intelligence. Thank you."
 - **Expected Result:** Instant grounded response, safe medical redirection, clean close with `Escape` key.
+

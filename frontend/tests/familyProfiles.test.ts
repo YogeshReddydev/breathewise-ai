@@ -112,3 +112,4 @@ describe('Family Profile & Vulnerability Matrix Tests', () => {
     expect(restoredFamily.is_demo).toBe(true);
   });
 });
+
