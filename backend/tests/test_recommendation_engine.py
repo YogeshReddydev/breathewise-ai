@@ -68,6 +68,25 @@ def test_member_evaluation_elevated_asthma():
     assert advisory.mask_recommended is True
 
 
+def test_cardio_restricted_at_unhealthy_aqi_156():
+    """Verify that vigorous outdoor cardio is restricted at AQI 156 / PM2.5 76.8 for standard adults."""
+    engine = IntelligentRecommendationEngine()
+    runner = FamilyMember(
+        id="elena_runner",
+        name="Elena",
+        relationship="Partner",
+        age=34,
+        conditions=[HealthCondition.NONE],
+        activity_preference=ActivityPreference.OUTDOOR_RUNNING,
+        vulnerability_tier=VulnerabilityTier.STANDARD,
+    )
+    # AQI 156 (Unhealthy), PM2.5 76.8 µg/m³
+    advisory = engine.evaluate_member(runner, aqi=156, dominant_pollutant="PM2.5", pm2_5=76.8)
+    assert advisory.outdoor_exercise_allowed is False
+    assert advisory.activity_safety in {ActivitySafetyLevel.RESTRICTED, ActivitySafetyLevel.DANGEROUS}
+    assert advisory.mask_recommended is True
+
+
 def test_indoor_protocol_levels():
     engine = IntelligentRecommendationEngine()
     proto_good = engine.generate_indoor_protocol(aqi=30, pm2_5=5.0)

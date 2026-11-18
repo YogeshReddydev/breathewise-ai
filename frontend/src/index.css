@@ -1,18 +1,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  --bg-primary: #050B14;
-  --bg-card: #0A1128;
-  --bg-card-hover: #0F1A3B;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(16, 185, 129, 0.25);
+  --bg-primary: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-card-subtle: #F1F5F9;
   
-  --emerald-accent: #10B981;
-  --cyan-accent: #06B6D4;
-  --amber-warning: #F59E0B;
-  --orange-caution: #F97316;
-  --crimson-danger: #EF4444;
-  --violet-severe: #8B5CF6;
+  --forest-900: #0F382C;
+  --forest-800: #134E3A;
+  --forest-700: #1B634B;
+  --forest-600: #247C5E;
+  --forest-500: #2E9773;
+
+  --teal-700: #0F766E;
+  --teal-600: #0D9488;
+  --teal-500: #14B8A6;
+  
+  --lime-700: #4D7C0F;
+  --lime-600: #65A30D;
+  --lime-500: #84CC16;
+  
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  
+  --border-subtle: #E2E8F0;
+  --border-strong: #CBD5E1;
+  
+  --aqi-good: #16A34A;
+  --aqi-moderate: #CA8A04;
+  --aqi-sensitive: #EA580C;
+  --aqi-unhealthy: #DC2626;
+  --aqi-very-unhealthy: #7C3AED;
+  --aqi-severe: #881337;
 }
 
 * {
@@ -21,38 +44,55 @@
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-primary);
-  color: #E2E8F0;
+  color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 code, .font-mono {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Glassmorphic cards */
-.glass-panel {
-  background: rgba(10, 17, 40, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-subtle);
+/* Premium Surface Classes */
+.clean-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
   border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.clean-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+}
+
+.clean-card-elevated {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+}
+
+/* Glass panel compatibility fallback */
+.glass-panel {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
 }
 
 .glass-panel-hover:hover {
-  background: rgba(15, 26, 59, 0.88);
-  border-color: rgba(255, 255, 255, 0.14);
-}
-
-.glow-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.3);
-}
-
-.glow-cyan {
-  box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.3);
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 /* Custom Scrollbars */
@@ -61,41 +101,24 @@ code, .font-mono {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #050B14;
+  background: #F1F5F9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1E293B;
+  background: #CBD5E1;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #94A3B8;
 }
 
-/* Animations */
+/* Subtle animations */
 @keyframes pulseSubtle {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.85; transform: scale(1.02); }
+  50% { opacity: 0.9; transform: scale(1.02); }
 }
 
 .animate-pulse-subtle {
   animation: pulseSubtle 3s ease-in-out infinite;
-}
-
-@keyframes breezeFlow {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
-}
-
-.breeze-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-.breeze-shimmer::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.08), transparent);
-  animation: breezeFlow 4s linear infinite;
 }
 
 /* Reduced Motion Accessibility */

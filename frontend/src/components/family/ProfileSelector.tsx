@@ -6,12 +6,10 @@ import {
   Activity,
   AlertCircle,
   UserPlus,
-  RotateCcw,
   Trash2,
-  X,
   Info,
-  Briefcase,
-  GraduationCap,
+  CheckCircle2,
+  Baby,
 } from 'lucide-react';
 import { FamilyMemberModal } from './FamilyMemberModal';
 
@@ -51,23 +49,25 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
   };
 
   return (
-    <div className="mt-8">
+    <div id="family-profiles" className="mt-8">
       {/* Top Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-emerald-400" />
+            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-800">
+              <Users className="w-5 h-5 text-emerald-700" />
+            </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                Family Profile &amp; Household Vulnerability Matrix
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Family Health &amp; Vulnerability Profiles</span>
                 {isDemo && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                    Simulation Demo
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                    Fictional Demo
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-slate-400">
-                Select a member to inspect tailored clinical risks &amp; activity guidelines
+              <p className="text-xs text-slate-500">
+                Personalized multi-generational respiratory health advisories tailored to age, asthma, and cardio history
               </p>
             </div>
           </div>
@@ -77,7 +77,7 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
           <button
             onClick={handleOpenAdd}
             aria-label="Add new household member"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold transition-all shadow-sm"
           >
             <UserPlus className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Add Member</span>
@@ -87,167 +87,121 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
             <button
               onClick={onClearDemo}
               aria-label="Remove fictional demonstration profiles"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-red-950/40 text-slate-300 hover:text-red-300 border border-white/10 hover:border-red-500/30 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-800 border border-slate-200 text-xs font-semibold transition-all"
               title="Remove fictional demonstration profiles to create your own household"
             >
               <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">Clear Demo</span>
+              <span>Clear Demo</span>
             </button>
           ) : (
             <button
               onClick={onResetDemo}
               aria-label="Restore standard 4-generation demonstration profiles"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-white/10 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
-              title="Restore standard 4-generation demonstration profiles"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition-all"
             >
-              <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">Reset Demo</span>
+              <span>Reset Demo Profiles</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Demonstration Profile Advisory Banner */}
+      {/* Demo Profile Disclosure Banner */}
       {isDemo && (
-        <div className="mb-4 p-3.5 rounded-xl bg-slate-900/80 border border-amber-500/30 text-xs text-amber-200/90 flex items-start gap-2.5">
-          <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <span className="font-semibold text-amber-300">Demonstration Profiles Notice: </span>
-            <span>
-              Marcus, Elena, Leo, and Sophia are fictional profiles designed to demonstrate multi-generational vulnerability responses (pediatric asthma, senior cardiovascular, commuter, runner). They do not represent real personal data. Click &apos;Clear Demo&apos; to configure your real household.
-            </span>
-          </div>
+        <div className="mb-4 p-3 rounded-xl bg-amber-50/80 border border-amber-200/90 text-amber-950 text-xs flex items-center gap-2.5">
+          <Info className="w-4 h-4 text-amber-700 shrink-0" />
+          <span className="leading-relaxed">
+            <strong>Demonstration Roster:</strong> Marcus, Elena, Leo, and Sophia are fictional profiles designed to showcase clinical sensitivity (pediatric asthma, senior cardiovascular risk, outdoor running, commute). They do not represent real personal data. Click &apos;Clear Demo&apos; to configure your household.
+          </span>
         </div>
       )}
 
-      {/* Member Cards Grid */}
-      {family.members.length === 0 ? (
-        <div className="p-8 text-center glass-panel border border-white/10 rounded-2xl">
-          <Users className="w-8 h-8 text-slate-500 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-white">No Household Profiles Configured</h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-            You cleared the demonstration profiles. Click &apos;Add Member&apos; to configure voluntary health conditions and activity preferences for your family.
-          </p>
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <button
-              onClick={handleOpenAdd}
-              className="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold"
+      {/* Profile Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {family.members.map((member) => {
+          const isSelected = member.id === selectedMemberId;
+          const isHighRisk = member.vulnerability_tier === 'high_risk';
+          const isSensitive = member.vulnerability_tier === 'sensitive';
+
+          return (
+            <div
+              key={member.id}
+              onClick={() => onSelectMember(member.id)}
+              className={`p-4 rounded-xl border text-left cursor-pointer transition-all relative flex flex-col justify-between ${
+                isSelected
+                  ? 'bg-emerald-50/70 border-emerald-600 shadow-sm ring-2 ring-emerald-500/20'
+                  : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-sm'
+              }`}
             >
-              + Add Household Member
-            </button>
-            {onResetDemo && (
-              <button
-                onClick={onResetDemo}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-medium hover:bg-slate-700"
-              >
-                Restore Demo Profiles
-              </button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {family.members.map((member) => {
-            const isSelected = member.id === selectedMemberId;
-            const isHighRisk = member.vulnerability_tier === 'high_risk';
-            const isSensitive = member.vulnerability_tier === 'sensitive';
-
-            return (
-              <div
-                key={member.id}
-                role="button"
-                tabIndex={0}
-                aria-pressed={isSelected}
-                aria-label={`Select profile for ${member.name}, ${member.relationship}, ${member.vulnerability_tier}`}
-                onClick={() => onSelectMember(member.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onSelectMember(member.id);
-                  }
-                }}
-                className={`p-4 rounded-xl text-left transition-all duration-200 border relative group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
-                  isSelected
-                    ? 'bg-[#0F1A3B] border-emerald-500/80 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/40'
-                    : 'bg-[#0A1128] border-white/5 hover:bg-[#0F1A3B] hover:border-white/15'
-                }`}
-              >
-                {/* Delete member button on non-demo profiles or demo profiles */}
-                {onRemoveMember && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveMember(member.id);
-                    }}
-                    aria-label={`Remove member ${member.name}`}
-                    className="absolute top-2.5 right-2.5 p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
-                    title="Remove member"
-                  >
-                    <X className="w-3.5 h-3.5" aria-hidden="true" />
-                  </button>
-                )}
-
-                {/* Vulnerability pill & relationship */}
-                <div className="flex items-center justify-between mb-2 pr-4">
-                  <span className="text-xs text-slate-400 font-medium">{member.relationship}</span>
-                  {isHighRisk && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                      High Risk
-                    </span>
-                  )}
-                  {isSensitive && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                      Sensitive
-                    </span>
-                  )}
-                  {!isHighRisk && !isSensitive && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      Standard
-                    </span>
-                  )}
-                </div>
-
-                {/* Name & Age */}
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-base font-extrabold text-white truncate">{member.name}</span>
-                  <span className="text-xs text-slate-400">({member.age}y)</span>
-                  {member.is_demo && (
-                    <span className="text-[9px] text-amber-400/80 font-mono">[Demo]</span>
-                  )}
-                </div>
-
-                {/* Key Health Condition */}
-                <div className="mt-2 text-xs flex flex-wrap gap-1 min-h-[24px]">
-                  {member.conditions.map((cond, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 capitalize"
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-slate-900">{member.name}</span>
+                    <span className="text-[11px] text-slate-500 font-medium">({member.relationship})</span>
+                  </div>
+                  {onRemoveMember && !isDemo && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveMember(member.id);
+                      }}
+                      className="text-slate-400 hover:text-rose-600 p-1"
+                      title="Remove profile"
                     >
-                      {cond === 'asthma' && <HeartPulse className="w-3 h-3 text-red-400" />}
-                      {cond === 'allergies' && <AlertCircle className="w-3 h-3 text-orange-400" />}
-                      {cond === 'cardiovascular' && <HeartPulse className="w-3 h-3 text-purple-400" />}
-                      {cond === 'outdoor_labor' && <Briefcase className="w-3 h-3 text-amber-400" />}
-                      {cond === 'student_commute' && <GraduationCap className="w-3 h-3 text-cyan-400" />}
-                      {cond === 'none' && <Activity className="w-3 h-3 text-emerald-400" />}
-                      {cond.replace('_', ' ')}
-                    </span>
-                  ))}
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
-                {/* Notes */}
-                {member.notes && (
-                  <p className="mt-2 text-[11px] text-slate-400 italic line-clamp-1 border-t border-white/5 pt-1.5">
-                    {member.notes}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-slate-600">Age: <strong>{member.age}</strong></span>
+                  <span className="text-slate-300">&bull;</span>
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                      isHighRisk
+                        ? 'bg-rose-50 text-rose-800 border-rose-200'
+                        : isSensitive
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    }`}
+                  >
+                    {member.vulnerability_tier.replace('_', ' ')}
+                  </span>
+                </div>
 
-      {/* Add Member Modal */}
-      {onAddMember && (
+                {/* Health Conditions Pills */}
+                {member.conditions.length > 0 && member.conditions[0] !== 'none' && (
+                  <div className="flex flex-wrap gap-1 my-2">
+                    {member.conditions.map((cond) => (
+                      <span
+                        key={cond}
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 capitalize border border-slate-200"
+                      >
+                        {cond}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-snug">
+                  {member.notes || 'Routine daily schedule'}
+                </p>
+              </div>
+
+              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-500 text-[11px] capitalize">
+                  {member.activity_preference.replace('_', ' ')}
+                </span>
+                <span className={`text-[11px] font-bold ${isSelected ? 'text-emerald-800' : 'text-slate-500'}`}>
+                  {isSelected ? '✓ Active Profile' : 'Inspect Advisories →'}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Internal Modal */}
+      {isModalOpen && onAddMember && (
         <FamilyMemberModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}

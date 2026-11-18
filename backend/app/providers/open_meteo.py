@@ -199,9 +199,22 @@ class OpenMeteoAQIProvider(BaseAQIProvider):
         co_list = hourly_raw.get("carbon_monoxide", [])
 
         hourly_items: List[HourlyForecastItem] = []
-        limit = min(len(times), hours)
+        
+        # Align starting index to current hour forward to avoid showing past hours in forecast
+        start_idx = 0
+        now_hour = datetime.now().strftime("%Y-%m-%dT%H:00")
+        for idx, t in enumerate(times):
+            if t >= now_hour:
+                start_idx = idx
+                break
+        
+        # If now_hour not matched or at the tail of dataset, fall back to start of series
+        if start_idx + 12 > len(times):
+            start_idx = 0
 
-        for i in range(limit):
+        end_idx = min(len(times), start_idx + hours)
+
+        for i in range(start_idx, end_idx):
             aqi_val = int(aqi_list[i]) if i < len(aqi_list) and aqi_list[i] is not None else 40
             pm2_val = float(pm2_5_list[i]) if i < len(pm2_5_list) and pm2_5_list[i] is not None else 10.0
             pm10_val = float(pm10_list[i]) if i < len(pm10_list) and pm10_list[i] is not None else 18.0

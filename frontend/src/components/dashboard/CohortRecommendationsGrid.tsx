@@ -6,10 +6,9 @@ import {
   Briefcase,
   HardHat,
   Home,
-  CheckCircle,
-  HelpCircle,
-  AlertCircle,
   Shield,
+  ArrowRight,
+  Info,
 } from 'lucide-react';
 import { StructuredRecommendation } from '../../types/recommendations';
 
@@ -23,31 +22,38 @@ export const CohortRecommendationsGrid: React.FC<CohortRecommendationsGridProps>
   const getCohortIcon = (cohort: string) => {
     switch (cohort) {
       case 'children':
-        return <Baby className="w-5 h-5 text-emerald-400" />;
+        return <Baby className="w-5 h-5 text-emerald-700" />;
       case 'older_adults':
-        return <Users className="w-5 h-5 text-purple-400" />;
+        return <Users className="w-5 h-5 text-purple-700" />;
       case 'students':
-        return <GraduationCap className="w-5 h-5 text-cyan-400" />;
+        return <GraduationCap className="w-5 h-5 text-teal-700" />;
       case 'daily_commuters':
-        return <Briefcase className="w-5 h-5 text-amber-400" />;
+        return <Briefcase className="w-5 h-5 text-amber-700" />;
       case 'outdoor_workers':
-        return <HardHat className="w-5 h-5 text-orange-400" />;
+        return <HardHat className="w-5 h-5 text-orange-700" />;
       default:
-        return <Home className="w-5 h-5 text-cyan-400" />;
+        return <Home className="w-5 h-5 text-emerald-700" />;
     }
   };
 
   return (
-    <div className="mt-8">
+    <div id="cohort-guidance" className="mt-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-cyan-400" />
-          <h2 className="text-lg font-bold text-white tracking-tight">
-            Target Cohort Clinical Directives
-          </h2>
+          <div className="p-2 rounded-lg bg-emerald-50 text-emerald-800">
+            <Shield className="w-5 h-5 text-emerald-700" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+              Cohort-Specific Clinical Directives
+            </h2>
+            <p className="text-xs text-slate-500">
+              5-dimension structured recommendations aligned with US EPA, CPCB, and WHO clinical thresholds
+            </p>
+          </div>
         </div>
-        <span className="text-xs text-slate-400">
-          5-Dimension Structured Evidence &bull; EPA &amp; CPCB Aligned
+        <span className="text-xs text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
+          Tailored demographic exposure guidance
         </span>
       </div>
 
@@ -55,16 +61,16 @@ export const CohortRecommendationsGrid: React.FC<CohortRecommendationsGridProps>
         {cohorts.map((item, idx) => (
           <div
             key={idx}
-            className="glass-panel p-5 flex flex-col justify-between border border-white/10 hover:border-white/20 transition-all text-xs"
+            className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-5 flex flex-col justify-between transition-all shadow-sm hover:shadow text-xs"
           >
             <div>
-              <div className="flex items-center gap-2.5 pb-3 border-b border-white/10 mb-3">
-                <div className="p-2 rounded-xl bg-slate-900/80 border border-white/5">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 mb-3">
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
                   {getCohortIcon(item.cohort)}
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">{item.target_group}</h3>
-                  <span className="text-[10px] text-cyan-400/90 font-mono">
+                  <h3 className="text-sm font-bold text-slate-900">{item.target_group}</h3>
+                  <span className="text-[10px] text-teal-700 font-mono font-medium">
                     {item.supporting_measurement}
                   </span>
                 </div>
@@ -72,41 +78,41 @@ export const CohortRecommendationsGrid: React.FC<CohortRecommendationsGridProps>
 
               {/* Recommended Action */}
               <div className="mb-3">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 block mb-1">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-800 block mb-1">
                   Prescribed Action
                 </span>
-                <p className="text-slate-100 font-semibold leading-relaxed">
+                <p className="text-slate-900 font-semibold leading-relaxed">
                   {item.recommended_action}
                 </p>
               </div>
 
-              {/* Rationale */}
+              {/* Physiological Reason */}
               <div className="mb-3">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-0.5">
-                  Physiological Reason
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block mb-0.5">
+                  Physiological Mechanism
                 </span>
-                <p className="text-slate-300 leading-relaxed text-[11px]">
+                <p className="text-slate-600 leading-relaxed text-[11px]">
                   {item.reason}
                 </p>
               </div>
 
               {/* Expected Benefit */}
               <div className="mb-3">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-cyan-400 block mb-0.5">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-teal-700 block mb-0.5">
                   Expected Benefit
                 </span>
-                <p className="text-slate-300 leading-relaxed text-[11px]">
+                <p className="text-slate-600 leading-relaxed text-[11px]">
                   {item.expected_benefit}
                 </p>
               </div>
             </div>
 
-            {/* Limitations & Caveat */}
-            <div className="pt-3 border-t border-white/10 mt-2 bg-slate-900/30 p-2.5 rounded-lg border border-white/5">
+            {/* Practical Limitations & Caveats */}
+            <div className="pt-3 border-t border-slate-100 mt-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block mb-0.5">
-                Practical Limitations &amp; Caveats
+                Practical Caveat
               </span>
-              <p className="text-slate-400 text-[10px] leading-tight">
+              <p className="text-slate-600 text-[10px] leading-tight">
                 {item.limitations}
               </p>
             </div>

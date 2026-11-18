@@ -38,8 +38,18 @@ class IntelligentRecommendationEngine:
         }
         multiplier = vuln_multipliers.get(member.vulnerability_tier, 1.0)
 
-        # Baseline score proportional to AQI (0-500 scale normalized)
-        base_score = (aqi / 300.0) * 60.0
+        # Standard clinical scaling aligned with EPA / CPCB breakpoints
+        if aqi <= 50:
+            base_score = (aqi / 50.0) * 25.0
+        elif aqi <= 100:
+            base_score = 25.0 + ((aqi - 50.0) / 50.0) * 25.0
+        elif aqi <= 150:
+            base_score = 50.0 + ((aqi - 100.0) / 50.0) * 20.0
+        elif aqi <= 200:
+            base_score = 70.0 + ((aqi - 150.0) / 50.0) * 15.0
+        else:
+            base_score = min(100.0, 85.0 + ((aqi - 200.0) / 100.0) * 15.0)
+
         calculated_score = min(100, int(base_score * multiplier))
 
         # Condition-specific adjustments
@@ -49,28 +59,34 @@ class IntelligentRecommendationEngine:
         is_outdoor_labor = HealthCondition.OUTDOOR_LABOR in member.conditions or member.activity_preference == ActivityPreference.OUTDOOR_WORK
         is_runner = member.activity_preference in {ActivityPreference.OUTDOOR_RUNNING, ActivityPreference.CYCLING}
 
-        if has_asthma and aqi > 70:
-            calculated_score = min(100, calculated_score + 18)
-        if has_cardio and aqi > 90:
-            calculated_score = min(100, calculated_score + 22)
-        if is_outdoor_labor and aqi > 100:
-            calculated_score = min(100, calculated_score + 20)
-        if is_runner and aqi > 90:
+        if has_asthma and aqi > 50:
             calculated_score = min(100, calculated_score + 15)
+        if has_cardio and aqi > 70:
+            calculated_score = min(100, calculated_score + 18)
+        if is_outdoor_labor and aqi > 100:
+            calculated_score = min(100, calculated_score + 15)
+        if is_runner and aqi > 80:
+            calculated_score = min(100, calculated_score + 12)
 
         # Activity Safety Level & Exercise Allowed
-        if calculated_score < 30:
+        # Clinical Rule: At AQI > 150 or PM2.5 > 55.4 µg/m³, vigorous outdoor cardio is unsafe for ALL cohorts including healthy standard adults.
+        # At AQI > 100 or PM2.5 > 35.4 µg/m³, vigorous cardio is restricted for Sensitive / High-Risk tiers.
+        if aqi > 150 or pm2_5 > 55.4 or calculated_score >= 70:
+            exercise_allowed = False
+            safety = ActivitySafetyLevel.RESTRICTED if (calculated_score < 85 and aqi <= 250) else ActivitySafetyLevel.DANGEROUS
+        elif aqi > 100 or pm2_5 > 35.4 or member.vulnerability_tier != VulnerabilityTier.STANDARD or calculated_score >= 50:
+            if member.vulnerability_tier == VulnerabilityTier.STANDARD and not is_runner and calculated_score < 55:
+                exercise_allowed = True
+                safety = ActivitySafetyLevel.MODERATE
+            else:
+                exercise_allowed = False
+                safety = ActivitySafetyLevel.RESTRICTED
+        elif calculated_score >= 30:
+            safety = ActivitySafetyLevel.MODERATE
+            exercise_allowed = True
+        else:
             safety = ActivitySafetyLevel.SAFE
             exercise_allowed = True
-        elif calculated_score < 55:
-            safety = ActivitySafetyLevel.MODERATE
-            exercise_allowed = True if member.vulnerability_tier == VulnerabilityTier.STANDARD else False
-        elif calculated_score < 75:
-            safety = ActivitySafetyLevel.RESTRICTED
-            exercise_allowed = False
-        else:
-            safety = ActivitySafetyLevel.DANGEROUS
-            exercise_allowed = False
 
         # Mask Guidance
         mask_recommended = False

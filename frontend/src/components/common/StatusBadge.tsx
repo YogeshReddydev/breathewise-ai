@@ -24,7 +24,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   const label = getAQILabel(category);
 
   const sizeClasses = {
-    sm: 'text-xs px-2 py-0.5',
+    sm: 'text-[11px] px-2 py-0.5',
     md: 'text-xs px-2.5 py-1 font-medium',
     lg: 'text-sm px-3.5 py-1.5 font-semibold',
   };
@@ -48,13 +48,20 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       aria-label={`Air quality health category: ${label}`}
       className={`inline-flex items-center gap-1.5 rounded-full border ${sizeClasses[size]}`}
       style={{
-        backgroundColor: `${color}18`,
+        backgroundColor: `${color}15`,
         borderColor: `${color}40`,
         color: color,
       }}
     >
       {renderIcon()}
-      {label}
+      <span>{label}</span>
+      {showDot && (
+        <span
+          className="w-1.5 h-1.5 rounded-full shrink-0"
+          style={{ backgroundColor: color }}
+          aria-hidden="true"
+        />
+      )}
     </span>
   );
 };

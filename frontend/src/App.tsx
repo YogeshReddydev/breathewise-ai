@@ -49,10 +49,19 @@ export const App: React.FC = () => {
     selectLocation,
   } = useAQI('New Delhi, India', family || undefined);
 
+  // Compute active displayed AQI consistently matching the active standard
+  const activeAQI = reading
+    ? standard === 'cpcb' && reading.cpcb?.calculable && reading.cpcb.aqi !== null && reading.cpcb.aqi !== undefined
+      ? reading.cpcb.aqi
+      : standard === 'european' && reading.aqi_eu !== null && reading.aqi_eu !== undefined
+      ? reading.aqi_eu
+      : reading.aqi_us
+    : 50;
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#050B14] text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
       
-      {/* Top Navigation */}
+      {/* Top Application Shell Navigation */}
       <Navbar
         currentCity={city}
         onSelectCity={selectLocation}
@@ -66,18 +75,18 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Offline notification banner */}
         {isOffline && (
-          <div className="mb-4 p-3.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-200 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <WifiOff className="w-4 h-4 text-amber-400 shrink-0" />
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex items-center justify-between text-xs shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <WifiOff className="w-4 h-4 text-amber-700 shrink-0" />
               <span>Offline Mode: Working with locally cached atmospheric telemetry. Reconnecting automatically when internet returns.</span>
             </div>
             <button
               onClick={refreshData}
-              className="flex items-center gap-1 px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 rounded-lg transition-colors font-medium"
+              className="flex items-center gap-1.5 px-3 py-1 bg-amber-200/60 hover:bg-amber-200 text-amber-900 rounded-lg transition-colors font-bold"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Reconnect
@@ -87,22 +96,22 @@ export const App: React.FC = () => {
 
         {/* Stale data notification banner */}
         {isStale && !isOffline && (
-          <div className="mb-4 p-3 rounded-xl bg-slate-900/90 border border-cyan-500/30 text-cyan-200 flex items-center gap-2 text-xs">
-            <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
+          <div className="mb-6 p-3.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-950 flex items-center gap-2 text-xs shadow-sm">
+            <Clock className="w-4 h-4 text-teal-700 shrink-0" />
             <span>Displaying cached atmospheric telemetry. Reconnecting to live sensor providers in background.</span>
           </div>
         )}
 
         {/* Error notification banner */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-950/40 border border-red-500/40 text-red-200 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-950 flex items-center justify-between text-xs shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>{error}</span>
             </div>
             <button
               onClick={refreshData}
-              className="flex items-center gap-1 px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg transition-colors font-medium"
+              className="flex items-center gap-1.5 px-3 py-1 bg-rose-200/60 hover:bg-rose-200 text-rose-900 rounded-lg transition-colors font-bold"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Retry
@@ -110,14 +119,14 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Loading state */}
+        {/* Initial Loading State */}
         {loading && !reading && (
           <div className="h-96 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-4">
-              <RefreshCw className="w-6 h-6 text-emerald-400 animate-spin" />
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-4 shadow-sm">
+              <RefreshCw className="w-6 h-6 text-emerald-700 animate-spin" />
             </div>
-            <h3 className="text-base font-bold text-white">Streaming Atmospheric Telemetry</h3>
-            <p className="text-xs text-slate-400 mt-1">Connecting to Open-Meteo &amp; synthesizing Indian CPCB / EPA environmental intelligence...</p>
+            <h3 className="text-base font-bold text-slate-900">Streaming Atmospheric Telemetry</h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-md">Connecting to Open-Meteo &amp; synthesizing Indian CPCB / EPA environmental intelligence for {city}...</p>
           </div>
         )}
 
@@ -125,7 +134,7 @@ export const App: React.FC = () => {
         {reading && (
           <div className="space-y-6">
             
-            {/* 1. Hero AQI Gauge Card with Multi-Standard Selector */}
+            {/* Section B: Hero AQI Gauge Card with Multi-Standard Selector */}
             <AQIGaugeHero
               reading={reading}
               recommendations={recommendations}
@@ -133,13 +142,13 @@ export const App: React.FC = () => {
               onSelectStandard={setStandard}
             />
 
-            {/* 2. Optimal Clean Air & Peak Windows */}
+            {/* Section E: Optimal Clean Air & Peak Smog Windows */}
             <OptimalWindowCard forecast={forecast} />
 
-            {/* 3. Atmospheric Pollutants Matrix */}
+            {/* Section D: Atmospheric Pollutants Spectrum Grid */}
             <PollutantGrid pollutants={reading.pollutants} />
 
-            {/* 4. 24-Hour & 48-Hour Forecast Curve */}
+            {/* Section C: 24-Hour & 48-Hour Hourly Forecast Trajectory */}
             <HourlyForecastTimeline
               forecast={forecast}
               standard={standard}
@@ -147,22 +156,23 @@ export const App: React.FC = () => {
               onSelectHours={setForecastHours}
             />
 
-            {/* 5. Indoor Clean Haven Protocol */}
+            {/* Section F: Indoor Clean Haven & Ventilation Protocol */}
             <IndoorProtocolCard protocol={recommendations?.indoor_protocol} />
 
-            {/* 6. Target Cohort Clinical Directives */}
+            {/* Cohort Clinical Directives */}
             <CohortRecommendationsGrid cohorts={recommendations?.cohort_recommendations} />
 
-            {/* 7. Sustainable Living & Green Commuting Calculator */}
-            <SustainableLivingSection currentAQI={reading.aqi_us} />
+            {/* Section I: Sustainable Mobility & Commute Emissions Calculator */}
+            {/* Bug #4 Fix: Synchronize Travel Safety Matrix with activeAQI */}
+            <SustainableLivingSection currentAQI={activeAQI} />
 
-            {/* 8. Community Intelligence & Civic Airshed Defense */}
+            {/* Section J: Community Intelligence & Civic Defense */}
             <CommunityIntelligenceCard
               reading={reading}
               onOpenChat={() => setIsChatOpen(true)}
             />
 
-            {/* 9. Family Profile Selector */}
+            {/* Section G: Family Profile Selector & Vulnerability Matrix */}
             <ProfileSelector
               family={family}
               selectedMemberId={selectedMemberId}
@@ -173,7 +183,7 @@ export const App: React.FC = () => {
               onRemoveMember={removeMember}
             />
 
-            {/* 9. Clinical Member Advisories */}
+            {/* Section G: Clinical Member Advisories */}
             <MemberHealthAdvisories
               selectedMember={selectedMember}
               recommendations={recommendations}
@@ -199,7 +209,7 @@ export const App: React.FC = () => {
         currentFamily={family}
       />
 
-      {/* Footer */}
+      {/* Section A: Application Shell Footer */}
       <Footer />
 
     </div>

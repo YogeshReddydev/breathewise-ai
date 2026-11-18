@@ -1,7 +1,7 @@
 import React from 'react';
 import { PollutantBreakdown } from '../../types/aqi';
 import { MetricCard } from '../common/MetricCard';
-import { Layers } from 'lucide-react';
+import { Layers, Info } from 'lucide-react';
 
 interface PollutantGridProps {
   pollutants: PollutantBreakdown;
@@ -9,17 +9,25 @@ interface PollutantGridProps {
 
 export const PollutantGrid: React.FC<PollutantGridProps> = ({ pollutants }) => {
   return (
-    <div className="mt-8">
-      <div className="flex items-center justify-between mb-4">
+    <div id="pollutants" className="mt-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-cyan-400" />
-          <h2 className="text-lg font-bold text-white tracking-tight">
-            Atmospheric Pollutant Spectrum
-          </h2>
+          <div className="p-2 rounded-lg bg-teal-50 text-teal-800">
+            <Layers className="w-5 h-5 text-teal-700" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+              Atmospheric Pollutant Spectrum
+            </h2>
+            <p className="text-xs text-slate-500">
+              Evaluated against World Health Organization (WHO 2021) Global Air Quality Guidelines
+            </p>
+          </div>
         </div>
-        <span className="text-xs text-slate-400">
-          Evaluated against WHO 2021 Clinical Health Benchmarks
-        </span>
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
+          <Info className="w-3.5 h-3.5 text-slate-400" />
+          <span>Real-time mass concentrations</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
