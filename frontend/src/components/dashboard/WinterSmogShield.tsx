@@ -10,7 +10,6 @@ export const WinterSmogShield: React.FC<WinterSmogShieldProps> = ({ reading }) =
   const [isExpanded, setIsExpanded] = useState(false);
 
   const pm25 = reading.pollutants.pm2_5;
-  const pm10 = reading.pollutants.pm10;
   
   // Calculate Winter Thermal Inversion Risk Index (0 - 100)
   // Higher PM2.5 combined with ratio suggests particulate trapping beneath cold ground inversions

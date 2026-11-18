@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Wind, Search, MapPin, Sparkles, RefreshCw, WifiOff, Menu, X } from 'lucide-react';
-import { AQIStandard, LocationSearchResult } from '../../types/aqi';
-import { searchLocations } from '../../services/api';
+import React, { useState } from 'react';
+import { Wind, Sparkles, RefreshCw, WifiOff, Menu, X } from 'lucide-react';
+import { AQIStandard } from '../../types/aqi';
+import { LocationSearchBar } from './LocationSearchBar';
+import { StandardSelector } from '../common/StandardSelector';
+import { NavLinks } from './NavLinks';
 
 interface NavbarProps {
   currentCity: string;
@@ -26,57 +28,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   standard,
   onSelectStandard,
 }) => {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<LocationSearchResult[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const quickCities = ['New Delhi', 'Mumbai', 'Bengaluru', 'San Francisco', 'London', 'Tokyo'];
-
-  const navLinks = [
-    { label: 'Overview', href: '#overview' },
-    { label: 'Forecast', href: '#forecast' },
-    { label: 'Winter Smog', href: '#winter-smog' },
-    { label: 'Pollutants', href: '#pollutants' },
-    { label: 'Best Window', href: '#activity-window' },
-    { label: 'Respirators', href: '#respirators' },
-    { label: 'Indoor Haven', href: '#indoor-air' },
-    { label: 'City Radar', href: '#city-benchmark' },
-    { label: 'Family Advisory', href: '#family-profiles' },
-    { label: 'Transit', href: '#sustainable-transit' },
-    { label: 'Community', href: '#community' },
-  ];
-
-  useEffect(() => {
-    if (query.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        const matches = await searchLocations(query);
-        setResults(matches);
-        setIsOpen(true);
-      } catch (err) {
-        console.error(err);
-      }
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  // Click outside to close search dropdown
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
@@ -114,101 +68,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             </a>
           </div>
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-md hidden md:block" ref={dropdownRef} role="search">
-            <div className="relative">
-              <div className="relative flex items-center">
-                <Search className="absolute left-3.5 w-4 h-4 text-slate-400" aria-hidden="true" />
-                <input
-                  type="text"
-                  aria-label="Search city or location"
-                  placeholder="Search city (e.g. Delhi, London, Mumbai)..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onFocus={() => query.length >= 2 && setIsOpen(true)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-20 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
-                />
-                <button
-                  onClick={onRefresh}
-                  title="Refresh air quality data"
-                  aria-label="Refresh air quality data"
-                  className="absolute right-2 px-2 py-1 text-slate-400 hover:text-emerald-700 transition-colors rounded"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-emerald-600' : ''}`} />
-                </button>
-              </div>
-
-              {/* Dropdown Results */}
-              {isOpen && results.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50" role="listbox">
-                  <div className="p-1.5 max-h-64 overflow-y-auto">
-                    {results.map((loc, idx) => (
-                      <button
-                        key={idx}
-                        role="option"
-                        aria-selected={false}
-                        onClick={() => {
-                          const displayName = loc.country ? `${loc.name}, ${loc.country}` : loc.name;
-                          onSelectCity(displayName, loc.latitude, loc.longitude);
-                          setQuery('');
-                          setIsOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 rounded-lg transition-colors"
-                      >
-                        <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" aria-hidden="true" />
-                        <span className="font-semibold text-slate-900">{loc.name}</span>
-                        {loc.admin1 && <span className="text-[11px] text-slate-500">({loc.admin1})</span>}
-                        {loc.country && <span className="text-[11px] text-slate-500 ml-auto">{loc.country}</span>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* Desktop Search Bar */}
+          <div className="flex-1 max-w-md hidden md:flex items-center gap-2" role="search">
+            <LocationSearchBar currentCity={currentCity} onSelectCity={onSelectCity} />
+            <button
+              onClick={onRefresh}
+              title="Refresh air quality data"
+              aria-label="Refresh air quality data"
+              className="p-2 text-slate-400 hover:text-emerald-700 transition-colors rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-emerald-600' : ''}`} />
+            </button>
           </div>
 
           {/* Right Action Controls: Standard Switcher & AI Assistant Button */}
           <div className="flex items-center gap-3">
             
             {/* Standard Switcher Tabs */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs" role="group" aria-label="AQI Standard selector">
-              <button
-                onClick={() => onSelectStandard('cpcb')}
-                aria-pressed={standard === 'cpcb'}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                  standard === 'cpcb'
-                    ? 'bg-white text-emerald-900 shadow-sm border border-slate-200/80'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Indian CPCB National AQI"
-              >
-                CPCB (India)
-              </button>
-              <button
-                onClick={() => onSelectStandard('us_epa')}
-                aria-pressed={standard === 'us_epa'}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                  standard === 'us_epa'
-                    ? 'bg-white text-teal-900 shadow-sm border border-slate-200/80'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="United States EPA AQI"
-              >
-                US EPA
-              </button>
-              <button
-                onClick={() => onSelectStandard('european')}
-                aria-pressed={standard === 'european'}
-                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                  standard === 'european'
-                    ? 'bg-white text-purple-900 shadow-sm border border-slate-200/80'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="European Air Quality Index"
-              >
-                EU
-              </button>
-            </div>
+            <StandardSelector standard={standard} onSelectStandard={onSelectStandard} size="sm" />
 
             {/* AI Assistant Trigger Button */}
             <button
@@ -238,40 +115,21 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         </div>
 
-        {/* Mobile Search & Quick Cities when mobile menu open or on mobile */}
-        <div className="mt-2.5 md:hidden">
-          <div className="relative">
-            <Search className="absolute left-3 w-4 h-4 text-slate-400 top-2.5" />
-            <input
-              type="text"
-              placeholder="Search city..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-10 py-1.5 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-600"
-            />
-            <button
-              onClick={onRefresh}
-              className="absolute right-2.5 top-2 text-slate-400 hover:text-emerald-700"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
+        {/* Mobile Search Input */}
+        <div className="mt-2.5 md:hidden flex items-center gap-2">
+          <LocationSearchBar currentCity={currentCity} onSelectCity={onSelectCity} />
+          <button
+            onClick={onRefresh}
+            aria-label="Refresh telemetry data"
+            className="p-2 text-slate-500 hover:text-emerald-700 bg-slate-100 rounded-xl shrink-0"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-emerald-600' : ''}`} />
+          </button>
         </div>
 
         {/* Sub-bar: Navigation Links & Quick Cities */}
         <div className="hidden md:flex items-center justify-between pt-2.5 mt-2 border-t border-slate-100 text-xs">
-          {/* Section Anchor Links */}
-          <nav className="flex items-center gap-5 overflow-x-auto" aria-label="Page Sections">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-slate-600 hover:text-emerald-800 font-semibold transition-colors whitespace-nowrap"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
+          <NavLinks />
 
           {/* Quick city selectors */}
           <div className="flex items-center gap-1.5 shrink-0" role="toolbar" aria-label="Popular cities">
@@ -298,18 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
           <div className="md:hidden pt-3 mt-2 border-t border-slate-200 space-y-2">
-            <div className="grid grid-cols-2 gap-2 py-2">
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="px-3 py-2 rounded-lg bg-slate-50 text-slate-700 font-semibold text-xs hover:bg-emerald-50 hover:text-emerald-800 transition-colors"
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
+            <NavLinks mobile onLinkClick={() => setIsMobileMenuOpen(false)} />
             <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
               <span className="text-[11px] text-slate-500 w-full mb-1">Quick Select City:</span>
               {quickCities.map((c) => (

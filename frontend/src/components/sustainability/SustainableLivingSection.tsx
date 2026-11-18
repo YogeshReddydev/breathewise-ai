@@ -1,73 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Leaf,
   Calculator,
   Compass,
-  ArrowRight,
-  TrendingDown,
-  AlertTriangle,
   Info,
-  CheckCircle2,
-  Bike,
-  Train,
-  Car,
-  Bus,
 } from 'lucide-react';
-import {
-  EmissionsCalculationResult,
-  SustainableTransportOption,
-  TransportMode,
-} from '../../types/sustainability';
-import { calculateEmissions, fetchSustainableTransportOptions } from '../../services/api';
+import { TransportMode } from '../../types/sustainability';
+import { useSustainableMobility } from '../../hooks/useSustainableMobility';
 
 interface SustainableLivingSectionProps {
   currentAQI: number;
 }
 
 export const SustainableLivingSection: React.FC<SustainableLivingSectionProps> = ({ currentAQI }) => {
-  const [distance, setDistance] = useState<number>(15);
-  const [baselineMode, setBaselineMode] = useState<TransportMode>('petrol_car');
-  const [targetMode, setTargetMode] = useState<TransportMode>('metro_train');
-  const [tripsPerWeek, setTripsPerWeek] = useState<number>(10);
-  const [result, setResult] = useState<EmissionsCalculationResult | null>(null);
-  const [options, setOptions] = useState<SustainableTransportOption[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-
-  useEffect(() => {
-    async function loadOptions() {
-      try {
-        const opts = await fetchSustainableTransportOptions(currentAQI);
-        setOptions(opts);
-      } catch (err) {
-        console.error('Failed to load transport options', err);
-      }
-    }
-    loadOptions();
-  }, [currentAQI]);
-
-  const handleCalculate = async () => {
-    setLoading(true);
-    try {
-      const res = await calculateEmissions(
-        {
-          distance_km: Number(distance),
-          baseline_mode: baselineMode,
-          target_mode: targetMode,
-          trips_per_week: Number(tripsPerWeek),
-        },
-        currentAQI
-      );
-      setResult(res);
-    } catch (err) {
-      console.error('Failed to calculate emissions', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    handleCalculate();
-  }, [distance, baselineMode, targetMode, tripsPerWeek, currentAQI]);
+  const {
+    distance,
+    setDistance,
+    baselineMode,
+    setBaselineMode,
+    targetMode,
+    setTargetMode,
+    tripsPerWeek,
+    setTripsPerWeek,
+    result,
+    options,
+  } = useSustainableMobility(currentAQI);
 
   return (
     <div id="sustainable-transit" className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm mt-8">

@@ -2,14 +2,9 @@ import React, { useState } from 'react';
 import { FamilyGroup, FamilyMember } from '../../types/family';
 import {
   Users,
-  HeartPulse,
-  Activity,
-  AlertCircle,
   UserPlus,
   Trash2,
   Info,
-  CheckCircle2,
-  Baby,
 } from 'lucide-react';
 import { FamilyMemberModal } from './FamilyMemberModal';
 

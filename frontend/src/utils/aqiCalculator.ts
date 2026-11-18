@@ -1,4 +1,4 @@
-import { AQIStandard, HealthCategory } from '../types/aqi';
+import { AQIReading, AQIStandard, HealthCategory } from '../types/aqi';
 
 export function getCategoryFromAQI(aqi: number): HealthCategory {
   if (aqi <= 50) return 'good';
@@ -108,3 +108,81 @@ export function getWhoThresholdPercentage(pollutant: string, value: number): {
     limit,
   };
 }
+
+export interface ActiveAQIDetails {
+  aqi: number | null;
+  category: string;
+  colorHex: string;
+  isCalculable: boolean;
+  limitationNote: string | null;
+  dominantPollutant: string;
+  standardLabel: string;
+}
+
+/**
+ * Returns comprehensive benchmark AQI details matching current standard.
+ */
+export function getActiveAQIDetails(
+  reading: AQIReading,
+  standard: AQIStandard = 'cpcb'
+): ActiveAQIDetails {
+  if (standard === 'cpcb') {
+    if (reading.cpcb && reading.cpcb.calculable && reading.cpcb.aqi !== null && reading.cpcb.aqi !== undefined) {
+      return {
+        aqi: reading.cpcb.aqi,
+        category: reading.cpcb.category,
+        colorHex: reading.cpcb.color_hex,
+        isCalculable: true,
+        limitationNote: null,
+        dominantPollutant: reading.cpcb.dominant_pollutant || reading.dominant_pollutant,
+        standardLabel: 'Indian CPCB NAQI',
+      };
+    }
+    return {
+      aqi: null,
+      category: reading.cpcb?.category || 'Insufficient Input Data',
+      colorHex: '#64748B',
+      isCalculable: false,
+      limitationNote:
+        reading.cpcb?.limitation_note ||
+        'Indian CPCB criteria strictly require at least 3 monitored pollutants including PM2.5 or PM10.',
+      dominantPollutant: reading.dominant_pollutant,
+      standardLabel: 'Indian CPCB NAQI',
+    };
+  }
+
+  if (standard === 'european') {
+    const euAQI = reading.aqi_eu ?? 30;
+    return {
+      aqi: euAQI,
+      category: reading.european?.category || (euAQI > 50 ? 'Moderate' : 'Good'),
+      colorHex: reading.european?.color_hex || '#16A34A',
+      isCalculable: true,
+      limitationNote: null,
+      dominantPollutant: reading.dominant_pollutant,
+      standardLabel: 'European AQI',
+    };
+  }
+
+  return {
+    aqi: reading.aqi_us,
+    category: reading.category_label,
+    colorHex: reading.color_hex,
+    isCalculable: true,
+    limitationNote: null,
+    dominantPollutant: reading.dominant_pollutant,
+    standardLabel: 'US EPA AQI',
+  };
+}
+
+/**
+ * Returns active benchmark numeric AQI matching current user-selected standard.
+ */
+export function getActiveAQI(
+  reading: AQIReading | null,
+  standard: AQIStandard = 'cpcb'
+): number {
+  if (!reading) return 50;
+  return getActiveAQIDetails(reading, standard).aqi ?? 50;
+}
+

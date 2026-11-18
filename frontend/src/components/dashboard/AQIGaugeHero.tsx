@@ -1,9 +1,10 @@
 import React from 'react';
 import { AQIReading, AQIStandard } from '../../types/aqi';
 import { ComprehensiveRecommendation } from '../../types/recommendations';
-import { getAQIPercentage } from '../../utils/aqiCalculator';
+import { getAQIPercentage, getActiveAQIDetails } from '../../utils/aqiCalculator';
 import { formatDatePretty } from '../../utils/formatters';
-import { MapPin, Clock, AlertTriangle, ShieldCheck, Database, Radio, Activity, AlertOctagon } from 'lucide-react';
+import { MapPin, Clock, AlertTriangle, Database } from 'lucide-react';
+import { StandardSelector } from '../common/StandardSelector';
 
 interface AQIGaugeHeroProps {
   reading: AQIReading;
@@ -18,44 +19,16 @@ export const AQIGaugeHero: React.FC<AQIGaugeHeroProps> = ({
   recommendations,
   standard = 'cpcb',
   onSelectStandard,
-  isStale = false,
+  isStale: _isStale = false,
 }) => {
-  // Determine standard-specific values
-  let displayAQI: number | null = reading.aqi_us;
-  let standardLabel = 'US EPA AQI';
-  let categoryLabel = reading.category_label;
-  let color = reading.color_hex;
-  let isCalculable = true;
-  let limitationNote: string | null = null;
-  let dominantPollutant = reading.dominant_pollutant;
-
-  if (standard === 'cpcb') {
-    standardLabel = 'Indian CPCB NAQI';
-    if (reading.cpcb && reading.cpcb.calculable && reading.cpcb.aqi !== null && reading.cpcb.aqi !== undefined) {
-      displayAQI = reading.cpcb.aqi;
-      categoryLabel = reading.cpcb.category;
-      color = reading.cpcb.color_hex;
-      dominantPollutant = reading.cpcb.dominant_pollutant || reading.dominant_pollutant;
-    } else {
-      isCalculable = false;
-      displayAQI = null;
-      categoryLabel = reading.cpcb?.category || 'Insufficient Input Data';
-      color = '#64748B';
-      limitationNote =
-        reading.cpcb?.limitation_note ||
-        'Indian CPCB criteria strictly require at least 3 monitored pollutants including PM2.5 or PM10.';
-    }
-  } else if (standard === 'european') {
-    standardLabel = 'European AQI';
-    displayAQI = reading.aqi_eu ?? 30;
-    categoryLabel = reading.european?.category || (displayAQI > 50 ? 'Moderate' : 'Good');
-    color = reading.european?.color_hex || '#16A34A';
-  } else {
-    standardLabel = 'US EPA AQI';
-    displayAQI = reading.aqi_us;
-    categoryLabel = reading.category_label;
-    color = reading.color_hex;
-  }
+  const active = getActiveAQIDetails(reading, standard);
+  const displayAQI = active.aqi;
+  const standardLabel = active.standardLabel;
+  const categoryLabel = active.category;
+  const color = active.colorHex;
+  const isCalculable = active.isCalculable;
+  const limitationNote = active.limitationNote;
+  const dominantPollutant = active.dominantPollutant;
 
   const percent = displayAQI !== null ? getAQIPercentage(displayAQI) : 0;
 
@@ -82,42 +55,12 @@ export const AQIGaugeHero: React.FC<AQIGaugeHeroProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 mb-6 border-b border-slate-100">
         
         {/* Standard Selector Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 backdrop-blur-sm rounded-xl border border-slate-200 text-xs">
-          <span className="text-[11px] text-slate-500 px-2 font-semibold">Standard:</span>
-          
-          <button
-            onClick={() => onSelectStandard && onSelectStandard('cpcb')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-              standard === 'cpcb'
-                ? 'bg-white text-emerald-900 border border-slate-200/90 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-            }`}
-          >
-            🇮🇳 CPCB NAQI (India)
-          </button>
-
-          <button
-            onClick={() => onSelectStandard && onSelectStandard('us_epa')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-              standard === 'us_epa'
-                ? 'bg-white text-teal-900 border border-slate-200/90 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-            }`}
-          >
-            🇺🇸 US EPA
-          </button>
-
-          <button
-            onClick={() => onSelectStandard && onSelectStandard('european')}
-            className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-              standard === 'european'
-                ? 'bg-white text-purple-900 border border-slate-200/90 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-            }`}
-          >
-            🇪🇺 European
-          </button>
-        </div>
+        {onSelectStandard && (
+          <StandardSelector
+            standard={standard}
+            onSelectStandard={onSelectStandard}
+          />
+        )}
 
         {/* Provenance & Observation Status with Live Telemetry Beacon */}
         <div className="flex items-center gap-2 text-xs">

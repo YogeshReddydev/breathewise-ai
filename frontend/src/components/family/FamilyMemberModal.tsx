@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Heart, Activity } from 'lucide-react';
+import { X, UserPlus } from 'lucide-react';
 import {
   ActivityPreference,
   FamilyMember,
@@ -7,6 +7,7 @@ import {
   TargetCohort,
   VulnerabilityTier,
 } from '../../types/family';
+import { determineVulnerabilityTier } from '../../utils/vulnerabilityClassifier';
 
 interface FamilyMemberModalProps {
   isOpen: boolean;
@@ -55,24 +56,7 @@ export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
   };
 
   const calculateTier = (): VulnerabilityTier => {
-    if (
-      conditions.includes('asthma') ||
-      conditions.includes('cardiovascular') ||
-      conditions.includes('copd') ||
-      age < 10 ||
-      age >= 65
-    ) {
-      return 'high_risk';
-    }
-    if (
-      conditions.includes('allergies') ||
-      conditions.includes('pregnancy') ||
-      conditions.includes('outdoor_labor') ||
-      (age >= 10 && age < 18)
-    ) {
-      return 'sensitive';
-    }
-    return 'standard';
+    return determineVulnerabilityTier(conditions, age);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

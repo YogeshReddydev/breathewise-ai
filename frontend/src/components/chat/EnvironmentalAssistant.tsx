@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, X, Bot, User, CornerDownLeft, ShieldCheck, Leaf, Info } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
+import { Send, Sparkles, X, Bot, User, Info } from 'lucide-react';
 import { AQIReading } from '../../types/aqi';
 import { FamilyGroup } from '../../types/family';
-import { ChatMessage } from '../../types/recommendations';
-import { sendChatMessage } from '../../services/api';
+import { useEnvironmentalChat } from '../../hooks/useEnvironmentalChat';
 
 interface EnvironmentalAssistantProps {
   isOpen: boolean;
@@ -18,26 +17,16 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
   currentAQI,
   currentFamily,
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'init-1',
-      sender: 'assistant',
-      text: "Hello! I am BreatheWise AI, your urban environmental intelligence specialist. Ask me anything regarding today's live telemetry, CPCB vs EPA standards, workout safety for family members, or sustainable travel alternatives.",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      source: 'expert_rules_engine',
-    },
-  ]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const {
+    messages,
+    input,
+    setInput,
+    loading,
+    suggestedQuestions,
+    sendMessage,
+  } = useEnvironmentalChat(currentAQI, currentFamily);
 
-  const suggestedQuestions = [
-    'How does Indian CPCB NAQI differ from US EPA AQI?',
-    'Is it safe for Leo (pediatric asthma) to play outdoors today?',
-    'What HEPA CADR rating do I need for my bedroom during smog?',
-    'Compare taking the electric metro vs driving today for emissions & lung safety',
-    'Should we open home windows for natural cross-ventilation tonight?',
-  ];
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,44 +43,8 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const handleSend = async (messageText: string) => {
-    const text = messageText.trim();
-    if (!text || loading) return;
-
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      sender: 'user',
-      text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInput('');
-    setLoading(true);
-
-    try {
-      const response = await sendChatMessage(text, currentAQI, currentFamily);
-      const assistantMsg: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        sender: 'assistant',
-        text: response.reply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        source: response.source,
-        model: response.model,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
-    } catch (err) {
-      const errorMsg: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        sender: 'assistant',
-        text: 'I encountered an issue connecting to the environmental reasoning service. Please check your network connection or try again.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        source: 'error',
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setLoading(false);
-    }
+  const handleSend = (messageText: string) => {
+    sendMessage(messageText);
   };
 
   if (!isOpen) return null;

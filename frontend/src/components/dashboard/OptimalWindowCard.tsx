@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, AlertOctagon, AlertTriangle, Clock, CheckCircle2, XCircle, ShieldCheck } from 'lucide-react';
+import { Sun, AlertOctagon, AlertTriangle, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { AirQualityForecast } from '../../types/aqi';
 import { formatTimeHour } from '../../utils/formatters';
 

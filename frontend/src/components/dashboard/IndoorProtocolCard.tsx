@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Wind, Fan, CheckCircle2, Flame, AlertCircle, Sparkles, CheckSquare, Square } from 'lucide-react';
+import { Shield, Wind, Fan, CheckCircle2, Flame, Sparkles, CheckSquare, Square } from 'lucide-react';
 import { IndoorProtocol } from '../../types/recommendations';
 
 interface IndoorProtocolCardProps {

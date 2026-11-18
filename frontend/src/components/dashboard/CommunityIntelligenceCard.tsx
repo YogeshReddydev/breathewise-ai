@@ -1,19 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  ShieldCheck,
   Building2,
-  Database,
-  Radio,
-  Share2,
   HeartHandshake,
   CheckCircle2,
-  AlertTriangle,
-  Info,
-  Globe2,
-  MapPin,
   Flame,
 } from 'lucide-react';
 import { AQIReading } from '../../types/aqi';
+import { useCommunityPledge } from '../../hooks/useCommunityPledge';
+import {
+  calculateCombustionRatio,
+  evaluateCivicActionProtocol,
+} from '../../utils/civicActionEngine';
 
 interface CommunityIntelligenceCardProps {
   reading: AQIReading;
@@ -24,57 +21,17 @@ export const CommunityIntelligenceCard: React.FC<CommunityIntelligenceCardProps>
   reading,
   onOpenChat,
 }) => {
-  const [pledged, setPledged] = useState<boolean>(() => {
-    return localStorage.getItem('breathewise_pledged') === 'true';
-  });
-  const [pledgeCount, setPledgeCount] = useState<number>(1428);
-
-  const handlePledge = () => {
-    if (!pledged) {
-      setPledged(true);
-      setPledgeCount((prev) => prev + 1);
-      localStorage.setItem('breathewise_pledged', 'true');
-    }
-  };
+  const { pledged, pledgeCount, makePledge } = useCommunityPledge();
 
   const pm25 = reading.pollutants?.pm2_5 ?? 0;
   const pm10 = reading.pollutants?.pm10 ?? 0;
-  const ratio = pm10 > 0 ? (pm25 / pm10).toFixed(2) : 'N/A';
-  const isCombustionDominant = pm10 > 0 && pm25 / pm10 > 0.6;
+  const { ratio, isCombustionDominant } = calculateCombustionRatio(pm25, pm10);
 
   // Derive Civic Action / GRAP Stage strictly mapped to thresholds
   const aqiVal = reading.cpcb?.aqi ?? reading.aqi_us;
-  let grapStage = 'Normal / Baseline Routine';
-  let grapColor = 'text-emerald-800 bg-emerald-50 border-emerald-300';
-  let schoolStatus = 'Normal Outdoor Play & Physical Education';
-  let dustMitigation = 'Standard Routine Street Sweeping';
+  const { grapStage, grapColor, schoolStatus, dustMitigation } = evaluateCivicActionProtocol(aqiVal);
 
-  if (aqiVal > 450) {
-    grapStage = 'GRAP Stage IV (Severe+ Emergency)';
-    grapColor = 'text-rose-900 bg-rose-100 border-rose-300';
-    schoolStatus = 'Mandatory Closure / Shift to Remote Learning';
-    dustMitigation = 'Total Construction Ban & High-Pressure Anti-Smog Guns Active';
-  } else if (aqiVal > 400) {
-    grapStage = 'GRAP Stage III (Severe Smog Alert)';
-    grapColor = 'text-rose-800 bg-rose-50 border-rose-200';
-    schoolStatus = 'Primary Schools Shift Indoors (No Outdoor PE)';
-    dustMitigation = 'Non-essential Construction & Demolition Suspended';
-  } else if (aqiVal > 300) {
-    grapStage = 'GRAP Stage II (Very Poor Air Quality)';
-    grapColor = 'text-orange-900 bg-orange-100 border-orange-300';
-    schoolStatus = 'Outdoor Sports Restricted to Low Intensity';
-    dustMitigation = 'Mechanical Sweeping & Regular Water Sprinkling on Corridors';
-  } else if (aqiVal > 200) {
-    grapStage = 'GRAP Stage I (Poor Air Quality Alert)';
-    grapColor = 'text-amber-900 bg-amber-100 border-amber-300';
-    schoolStatus = 'Sensitive Children Monitored during Recess';
-    dustMitigation = 'Construction Dust Tarps & Screens Enforced';
-  } else if (aqiVal > 100) {
-    grapStage = 'Civic Alert (Moderate Air Advisory)';
-    grapColor = 'text-yellow-900 bg-yellow-100 border-yellow-300';
-    schoolStatus = 'Monitor Asthmatic & Sensitive Students during Outdoor Play';
-    dustMitigation = 'Pre-emptive Water Sprinkling on Main Road Corridors';
-  }
+  const handlePledge = makePledge;
 
   return (
     <div id="community" className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm mt-8">
@@ -175,6 +132,17 @@ export const CommunityIntelligenceCard: React.FC<CommunityIntelligenceCardProps>
                 <span><strong>Civic Dust Mitigation:</strong> {dustMitigation}</span>
               </div>
             </div>
+
+            {onOpenChat && (
+              <button
+                type="button"
+                onClick={onOpenChat}
+                className="mt-3 text-xs text-teal-700 font-bold hover:text-teal-900 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>Ask AI Assistant about local clean air bylaws</span>
+                <span aria-hidden="true">&rarr;</span>
+              </button>
+            )}
           </div>
 
         </div>

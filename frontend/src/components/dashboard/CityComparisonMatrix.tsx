@@ -1,6 +1,6 @@
 import React from 'react';
 import { AQIReading } from '../../types/aqi';
-import { Compass, TrendingUp, TrendingDown, ArrowRight, Globe2, Building2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowRight, Globe2, Building2 } from 'lucide-react';
 
 interface CityComparisonMatrixProps {
   currentReading: AQIReading;

@@ -7,8 +7,6 @@ import {
   HardHat,
   Home,
   Shield,
-  ArrowRight,
-  Info,
 } from 'lucide-react';
 import { StructuredRecommendation } from '../../types/recommendations';
 

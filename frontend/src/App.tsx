@@ -18,6 +18,7 @@ import { FamilyMemberModal } from './components/family/FamilyMemberModal';
 import { EnvironmentalAssistant } from './components/chat/EnvironmentalAssistant';
 import { useAQI } from './hooks/useAQI';
 import { useFamilyProfiles } from './hooks/useFamilyProfiles';
+import { getActiveAQI } from './utils/aqiCalculator';
 import { AlertCircle, RefreshCw, WifiOff, Clock } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -53,13 +54,7 @@ export const App: React.FC = () => {
   } = useAQI('New Delhi, India', family || undefined);
 
   // Compute active displayed AQI consistently matching the active standard
-  const activeAQI = reading
-    ? standard === 'cpcb' && reading.cpcb?.calculable && reading.cpcb.aqi !== null && reading.cpcb.aqi !== undefined
-      ? reading.cpcb.aqi
-      : standard === 'european' && reading.aqi_eu !== null && reading.aqi_eu !== undefined
-      ? reading.aqi_eu
-      : reading.aqi_us
-    : 50;
+  const activeAQI = getActiveAQI(reading, standard);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">

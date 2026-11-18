@@ -1,66 +1,29 @@
 import React, { useState } from 'react';
 import { AQIReading } from '../../types/aqi';
-import { Shield, Sparkles, AlertCircle, Clock, Check, RefreshCw } from 'lucide-react';
+import { Shield, Sparkles, AlertCircle, Clock, Check } from 'lucide-react';
+import {
+  calculateRespiratorExposure,
+  MASK_SPECIFICATIONS,
+  MaskType,
+} from '../../utils/maskCalculator';
 
 interface MaskFilterEstimatorProps {
   reading: AQIReading;
 }
-
-type MaskType = 'n95' | 'n99' | 'kf94' | 'surgical';
 
 export const MaskFilterEstimator: React.FC<MaskFilterEstimatorProps> = ({ reading }) => {
   const [maskType, setMaskType] = useState<MaskType>('n95');
   const [exposureHours, setExposureHours] = useState<number>(2);
 
   const pm25 = reading.pollutants.pm2_5;
-
-  // Filtration efficiency specifications
-  const maskSpecs: Record<MaskType, { name: string; efficiency: number; maxLifeHours: number; description: string }> = {
-    n95: {
-      name: 'N95 Respirator',
-      efficiency: 0.95,
-      maxLifeHours: 40,
-      description: 'NIOSH certified; filters ≥95% of non-oil particulates down to 0.3 microns with proper facial seal.',
-    },
-    n99: {
-      name: 'N99 / FFP3 Respirator',
-      efficiency: 0.99,
-      maxLifeHours: 35,
-      description: 'High-grade electrostatic filter; blocks ≥99% of fine aerosols. Higher breathing resistance.',
-    },
-    kf94: {
-      name: 'KF94 (Korean Standard)',
-      efficiency: 0.94,
-      maxLifeHours: 30,
-      description: 'Foldable 3-panel design with adjustable nose bridge; filters ≥94% of particulate matter.',
-    },
-    surgical: {
-      name: 'Standard 3-Ply Surgical Mask',
-      efficiency: 0.35,
-      maxLifeHours: 8,
-      description: 'Fluid resistant but loose facial fit; allows significant perimeter particulate leakage (effective ~30-40%).',
-    },
-  };
-
-  const selectedSpec = maskSpecs[maskType];
-
-  // Respiration volume: Average adult breaths ~0.5 m³ of air per hour at light exertion
-  const hourlyAirVolumeM3 = 0.55;
-  const dailyInhaledAirM3 = hourlyAirVolumeM3 * exposureHours;
-
-  // Inhaled particulate mass without mask: Volume * PM2.5 (µg/m³)
-  const unmaskedExposureUg = dailyInhaledAirM3 * pm25;
-  
-  // Particulate mass blocked by mask:
-  const blockedExposureUg = unmaskedExposureUg * selectedSpec.efficiency;
-  
-  // Particulate mass penetrating into lungs:
-  const lungPenetrationUg = unmaskedExposureUg - blockedExposureUg;
-
-  // Estimated filter life reduction: High PM2.5 degrades electrostatic media faster
-  const degradationMultiplier = pm25 > 150 ? 2.0 : pm25 > 80 ? 1.4 : 1.0;
-  const estimatedUsefulHours = Math.round(selectedSpec.maxLifeHours / degradationMultiplier);
-  const remainingDays = Math.max(1, Math.round(estimatedUsefulHours / Math.max(1, exposureHours)));
+  const {
+    selectedSpec,
+    unmaskedExposureUg,
+    blockedExposureUg,
+    lungPenetrationUg,
+    estimatedUsefulHours,
+    remainingDays,
+  } = calculateRespiratorExposure(pm25, maskType, exposureHours);
 
   return (
     <div id="respirators" className="glass-card-elevated p-6 mt-8 relative overflow-hidden transition-all duration-300">
@@ -99,7 +62,7 @@ export const MaskFilterEstimator: React.FC<MaskFilterEstimatorProps> = ({ readin
               Selected Respirator Grade:
             </span>
             <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="mask-grade-label">
-              {(Object.keys(maskSpecs) as MaskType[]).map((key) => (
+              {(Object.keys(MASK_SPECIFICATIONS) as MaskType[]).map((key) => (
                 <button
                   key={key}
                   type="button"
@@ -112,11 +75,11 @@ export const MaskFilterEstimator: React.FC<MaskFilterEstimatorProps> = ({ readin
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs">{maskSpecs[key].name}</span>
+                    <span className="font-bold text-xs">{MASK_SPECIFICATIONS[key].name}</span>
                     {maskType === key && <Check className="w-3.5 h-3.5 text-teal-700 shrink-0" aria-hidden="true" />}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono block mt-0.5">
-                    {(maskSpecs[key].efficiency * 100).toFixed(0)}% efficiency
+                    {(MASK_SPECIFICATIONS[key].efficiency * 100).toFixed(0)}% efficiency
                   </span>
                 </button>
               ))}

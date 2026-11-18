@@ -2,7 +2,6 @@ import React from 'react';
 import { FamilyMember } from '../../types/family';
 import { ComprehensiveRecommendation, MemberAdvisory } from '../../types/recommendations';
 import {
-  ShieldAlert,
   Check,
   X,
   AlertTriangle,

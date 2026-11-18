@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AirQualityForecast, AQIStandard } from '../../types/aqi';
 import { formatTimeHour } from '../../utils/formatters';
-import { Calendar, Clock, BarChart3, Radio, Info } from 'lucide-react';
+import { Calendar, Clock, Radio } from 'lucide-react';
 
 interface HourlyForecastTimelineProps {
   forecast: AirQualityForecast | null;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Wind, Info, ExternalLink, Globe2, Heart } from 'lucide-react';
+import { ShieldCheck, Wind, ExternalLink } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (

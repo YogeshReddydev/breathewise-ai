@@ -5,6 +5,7 @@ from app.core.config import get_settings
 from app.models.aqi import AQIReading
 from app.models.family import FamilyGroup
 from app.models.recommendations import ComprehensiveRecommendation
+from app.services.chat_intents import IntentDispatcher
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class GeminiService:
         self.api_key = self.settings.GEMINI_API_KEY
         self.model_name = self.settings.GEMINI_MODEL or "gemini-2.5-flash"
         self._client = None
+        self._dispatcher = IntentDispatcher()
         self._init_client()
 
     def _init_client(self):
@@ -165,119 +167,8 @@ Respond strictly in valid JSON format with keys:
         aqi_reading: Optional[AQIReading],
         family: Optional[FamilyGroup],
     ) -> Dict[str, Any]:
-        msg_lower = message.lower()
-        aqi_val = aqi_reading.aqi_us if aqi_reading else 65
-        loc_name = aqi_reading.location_name if aqi_reading else "your area"
-        pm2_5_val = aqi_reading.pollutants.pm2_5 if aqi_reading else 18.0
-
-        # 0A. Unsafe clinical medical requests & prescription / drug dosage inquiries
-        if any(w in msg_lower for w in ["dosage", "dose", "prescribe", "prescription", "medication", "medicine", "pill", "steroid", "prednisone", "stop taking", "stop inhaler", "diagnose", "diagnosis"]):
-            reply = (
-                "Medical Safety Notice: BreatheWise AI provides environmental risk reduction guidance based on ambient air pollution standards (CPCB and US EPA). "
-                "We do NOT prescribe medications, adjust drug dosages, or provide clinical medical diagnoses. "
-                "Never alter or discontinue prescribed asthma, cardiovascular, or respiratory therapies without direct guidance from your licensed physician or healthcare specialist. "
-                "If experiencing acute respiratory distress, severe wheezing, or chest pain, seek immediate emergency medical care."
-            )
-            return {
-                "reply": reply,
-                "model": "breathewise-expert-rules",
-                "source": "expert_rules_engine",
-            }
-
-        # 0B. Contradictory health myths or dangerous instructions
-        if any(w in msg_lower for w in ["immunity", "strengthen lungs", "build resistance", "good for lungs", "healthy to breathe smog", "healthy to breathe smoke", "deep breath in smog"]):
-            reply = (
-                f"Scientific Clarification: Inhaling airborne particulate matter (PM2.5/PM10) or photochemical smog does NOT build immunity or strengthen lung capacity. "
-                f"Unlike biological antigens, particulate matter consists of microscopic combustion products, heavy metals, and aerosols that trigger alveolar inflammation, oxidative stress, and vascular endothelial damage. "
-                f"In current conditions ({loc_name}, AQI {aqi_val}), deep breathing outdoors should be avoided; prioritize clean indoor air with active HEPA filtration."
-            )
-            return {
-                "reply": reply,
-                "model": "breathewise-expert-rules",
-                "source": "expert_rules_engine",
-            }
-
-        # 1. Sustainable transport / commuting queries
-        if any(w in msg_lower for w in ["transit", "commute", "metro", "bus", "carpool", "emission", "transport", "bike", "cycle"]):
-            if aqi_val <= 100:
-                reply = (
-                    f"Sustainable Mobility Guide for {loc_name} (AQI {aqi_val}):\n\n"
-                    f"1. Active Travel (Walking / Cycling): Safe and encouraged today. Produces 0 g CO2/km and avoids ~170 g CO2/km compared to solo petrol driving.\n"
-                    f"2. Mass Transit: Taking the city bus (~35 g CO2/p-km) or electric metro (~22 g CO2/p-km) cuts greenhouse emissions by 80-87%.\n"
-                    f"3. Environmental Benefit: Every 10 km shifted from a car to metro prevents ~1.5 kg of CO2 and eliminates 0.4 g of direct tailpipe PM2.5."
-                )
-            else:
-                reply = (
-                    f"Commuting & Exposure Advisory for {loc_name} (AQI {aqi_val} - Elevated):\n\n"
-                    f"1. Air Quality Precaution: While cycling and walking are carbon-neutral, vigorous respiration in heavy traffic causes deep particulate deposition in lungs. Today, prefer electric rail / metro.\n"
-                    f"2. Public Transit: Metro cabins provide filtered air, shielding you from roadside diesel exhaust while keeping emissions low (22 g CO2/p-km).\n"
-                    f"3. If Driving: Switch your vehicle HVAC to 'Internal Recirculation' mode and consider carpooling to avoid adding unnecessary traffic emissions."
-                )
-
-        # 2. Workout / running / exercise queries
-        elif any(w in msg_lower for w in ["run", "jog", "workout", "exercise", "marathon", "fitness", "gym"]):
-            if aqi_val <= 50:
-                reply = f"In {loc_name}, the AQI is currently {aqi_val} (Good). Outdoor workouts, marathon training, and recreational sports are unrestricted for all household members."
-            elif aqi_val <= 100:
-                reply = f"The AQI in {loc_name} is {aqi_val} (Moderate, PM2.5: {pm2_5_val:.1f} µg/m³). Outdoor running is acceptable for healthy individuals. Sensitive members should opt for shaded parks and schedule sessions before afternoon traffic builds."
-            else:
-                reply = (
-                    f"The AQI in {loc_name} is {aqi_val} (Elevated). Aerobic running increases pulmonary ventilation rate 5-10 fold, drawing particles deep into alveoli. "
-                    f"We strongly recommend shifting workouts indoors: treadmill cardio, stationary cycling, or bodyweight circuit training in a room with active HEPA filtration."
-                )
-
-        # 3. Mask recommendations
-        elif any(w in msg_lower for w in ["mask", "n95", "kn95", "face mask", "respirator", "ffp2"]):
-            if aqi_val <= 100:
-                reply = f"With an AQI of {aqi_val}, respirators are not universally required for healthy adults. However, family members with asthma or dust sensitivity benefit from a KN95 mask near busy construction or traffic corridors."
-            else:
-                reply = (
-                    f"Because current AQI is {aqi_val} with fine PM2.5 at {pm2_5_val:.1f} µg/m³, standard cloth or surgical masks provide minimal protection against sub-micron particles. "
-                    f"We recommend a NIOSH-certified N95, KN95, or FFP2 respirator with an airtight facial seal for any outdoor exposure exceeding 15 minutes."
-                )
-
-        # 4. Windows & indoor ventilation
-        elif any(w in msg_lower for w in ["window", "windows", "ventilation", "fresh air", "air purifier", "hepa"]):
-            if aqi_val <= 50:
-                reply = f"The outdoor air in {loc_name} is crisp (AQI {aqi_val}). Yes, open your windows for 30-45 minutes to create cross-ventilation and purge indoor VOCs, CO2, and allergens."
-            else:
-                reply = (
-                    f"With outdoor AQI at {aqi_val} (PM2.5: {pm2_5_val:.1f} µg/m³), outdoor pollution exceeds WHO safe limits. Keep windows closed and sealed. "
-                    f"Run your indoor HEPA air purifier on medium or auto mode in bedrooms and living spaces, and avoid burning incense or frying food without an exhaust hood."
-                )
-
-        # 5. Cohort queries: children, students, asthma, seniors
-        elif any(w in msg_lower for w in ["asthma", "child", "children", "kid", "school", "recess", "student", "senior", "elderly"]):
-            reply = (
-                f"Vulnerable Cohort Advisory for {loc_name} (AQI {aqi_val}):\n\n"
-                f"- Children & Students: Due to developing airways and higher ventilation per kilogram, children absorb more particulate matter. Keep physician-prescribed rescue inhalers or asthma action plans accessible as directed, and shift playground games indoors if AQI exceeds 100.\n"
-                f"- Older Adults: Particulate exposure increases vascular resistance and blood pressure. Limit outdoor physical exertion and stay in air-filtered spaces.\n"
-                f"- Precaution: This guidance is preventive; please consult your pediatrician or physician for individualized clinical action plans."
-            )
-
-        # 6. CPCB vs US EPA comparison
-        elif any(w in msg_lower for w in ["cpcb", "epa", "standard", "breakpoint", "difference"]):
-            cpcb_status = f"{aqi_reading.cpcb.aqi} ({aqi_reading.cpcb.category})" if (aqi_reading and aqi_reading.cpcb and aqi_reading.cpcb.calculable) else "requires at least 3 monitored pollutants"
-            reply = (
-                f"AQI Standard Architecture Comparison in BreatheWise AI:\n\n"
-                f"1. Indian CPCB NAQI: Evaluates 8 pollutants (PM10, PM2.5, NO2, SO2, CO, O3, NH3, Pb). Breakpoints: 0-50 Good, 51-100 Satisfactory, 101-200 Moderate, 201-300 Poor, 301-400 Very Poor, 401-500 Severe. Requires at least 3 monitored pollutants with either PM10 or PM2.5. Current CPCB status: {cpcb_status}.\n"
-                f"2. US EPA AQI: Focuses on 5 criteria pollutants with standard 0-500 scale: 0-50 Good, 51-100 Moderate, 101-150 Unhealthy for Sensitive Groups, 151-200 Unhealthy, 201-300 Very Unhealthy, 301-500 Hazardous.\n"
-                f"3. European AQI: Evaluates 1-5 index based on CAQI/EAQI thresholds.\n\n"
-                f"BreatheWise never mixes or equates these scales—each is calculated and labeled independently."
-            )
-
-        else:
-            cpcb_val = f" | CPCB: {aqi_reading.cpcb.aqi}" if (aqi_reading and aqi_reading.cpcb and aqi_reading.cpcb.calculable) else ""
-            reply = (
-                f"BreatheWise Environmental Summary for {loc_name}: Current US EPA AQI is {aqi_val}{cpcb_val} with primary pollutant {aqi_reading.dominant_pollutant if aqi_reading else 'PM2.5'} at {pm2_5_val:.1f} µg/m³. "
-                f"All telemetry is sourced live from Open-Meteo numerical atmospheric models. Check the 24h/48h forecast curve and tailored family recommendations before planning prolonged outdoor exposures."
-            )
-
-        return {
-            "reply": reply,
-            "model": "breathewise-expert-rules",
-            "source": "expert_rules_engine",
-        }
+        """Dispatches conversational query to prioritized, deterministic environmental health intents."""
+        return self._dispatcher.dispatch(message, aqi_reading, family)
 
 
 _gemini_service_instance: Optional[GeminiService] = None
