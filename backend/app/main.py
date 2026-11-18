@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.api.router import api_router
 from app.core.config import get_settings
@@ -34,6 +34,9 @@ app = FastAPI(
     description="Intelligent urban air quality and environmental health advisory API powered by Open-Meteo & Gemini AI",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 settings = get_settings()
@@ -43,6 +46,7 @@ cors_origins = settings.cors_origins_list if settings.cors_origins_list else ["h
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -105,6 +109,16 @@ async def health_check():
         "default_provider": settings.DEFAULT_AQI_PROVIDER,
         "gemini_active": bool(settings.GEMINI_API_KEY),
     }
+
+
+@app.get("/docs", include_in_schema=False)
+async def redirect_docs():
+    return RedirectResponse(url="/api/docs")
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redirect_redoc():
+    return RedirectResponse(url="/api/redoc")
 
 
 @app.exception_handler(Exception)
