@@ -64,6 +64,15 @@ def test_invalid_user_coordinate_inputs():
     res_inf = client.get("/api/aqi/current?lat=28.6&lon=inf")
     assert res_inf.status_code == 400
 
+    # Single coordinate input rejection (must provide both or neither)
+    res_lat_only = client.get("/api/aqi/current?lat=28.6")
+    assert res_lat_only.status_code == 400
+    assert "Both latitude and longitude must be provided together" in res_lat_only.json()["detail"]
+
+    res_lon_only = client.get("/api/aqi/current?lon=77.2")
+    assert res_lon_only.status_code == 400
+    assert "Both latitude and longitude must be provided together" in res_lon_only.json()["detail"]
+
 
 def test_security_headers_present():
     """Verify OWASP recommended security headers on all responses."""

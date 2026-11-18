@@ -15,6 +15,8 @@ async def get_current_aqi(
     standard: Optional[AQIStandard] = Query(None, description="AQI standard: cpcb, us_epa, european"),
 ):
     """Retrieve real-time air quality index, pollutant concentrations, and multi-standard breakdown."""
+    if (lat is not None and lon is None) or (lat is None and lon is not None):
+        raise HTTPException(status_code=400, detail="Both latitude and longitude must be provided together.")
     if lat is not None and lon is not None:
         if not validate_coordinates(lat, lon):
             raise HTTPException(status_code=400, detail="Invalid coordinates range.")
@@ -35,6 +37,8 @@ async def get_aqi_forecast(
     hours: int = Query(24, ge=6, le=72, description="Forecast horizon in hours (e.g. 24 or 48)"),
 ):
     """Retrieve multi-hour atmospheric forecast with optimal activity windows and CPCB predictions."""
+    if (lat is not None and lon is None) or (lat is None and lon is not None):
+        raise HTTPException(status_code=400, detail="Both latitude and longitude must be provided together.")
     if lat is not None and lon is not None:
         if not validate_coordinates(lat, lon):
             raise HTTPException(status_code=400, detail="Invalid coordinates range.")

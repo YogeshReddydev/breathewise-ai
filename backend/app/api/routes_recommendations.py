@@ -1,6 +1,7 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+from app.core.security import validate_coordinates
 from app.models.aqi import AQIStandard
 from app.models.family import FamilyGroup, get_default_family_group
 from app.models.recommendations import ComprehensiveRecommendation
@@ -25,6 +26,12 @@ async def get_comprehensive_recommendations(
     standard: Optional[AQIStandard] = Query(None, description="cpcb, us_epa, european"),
 ):
     """Generate intelligent health advisories and indoor protocols for default family profile."""
+    if (lat is not None and lon is None) or (lat is None and lon is not None):
+        raise HTTPException(status_code=400, detail="Both latitude and longitude must be provided together.")
+    if lat is not None and lon is not None:
+        if not validate_coordinates(lat, lon):
+            raise HTTPException(status_code=400, detail="Invalid coordinates range.")
+
     service = get_aqi_service()
     try:
         return await service.get_comprehensive_assessment(city=city, lat=lat, lon=lon, standard=standard)
@@ -35,6 +42,12 @@ async def get_comprehensive_recommendations(
 @router.post("/evaluate-custom", response_model=ComprehensiveRecommendation)
 async def evaluate_custom_profile(payload: CustomEvaluationPayload):
     """Generate tailored advisories for custom user and family group configurations."""
+    if (payload.lat is not None and payload.lon is None) or (payload.lat is None and payload.lon is not None):
+        raise HTTPException(status_code=400, detail="Both latitude and longitude must be provided together.")
+    if payload.lat is not None and payload.lon is not None:
+        if not validate_coordinates(payload.lat, payload.lon):
+            raise HTTPException(status_code=400, detail="Invalid coordinates range.")
+
     service = get_aqi_service()
     try:
         family = payload.family or get_default_family_group()
