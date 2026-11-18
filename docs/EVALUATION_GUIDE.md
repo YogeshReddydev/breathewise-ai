@@ -72,13 +72,13 @@ This guide provides step-by-step instructions for competition judges and evaluat
 ### Criterion 4: Automated Testing
 **Objective:** Verify that the automated testing suite thoroughly covers edge cases, boundary conditions, and failure resilience.
 
-1. **Run Backend Tests (58 Tests)**:
+1. **Run Backend Tests (59 Tests)**:
    ```bash
    cd backend
    python -m pytest
    ```
-   *Expected Output: `58 passed in ~4.5s`*
-   - Covers: CPCB sub-index linear interpolation, US EPA & European AQI mapping, 5-dimension structured evidence, sustainable mobility calculations, family member CRUD, input boundary validation, provider failover, stale cache retrieval, OWASP security headers, sliding-window rate limiting, and 11 dedicated AI safety/reliability scenarios.
+   *Expected Output: `59 passed in ~5s`*
+   - Covers: Complete 12-step end-to-end user journey, CPCB sub-index linear interpolation, US EPA & European AQI mapping, 5-dimension structured evidence, sustainable mobility calculations, family member CRUD, input boundary validation, provider failover, stale cache retrieval, OWASP security headers, sliding-window rate limiting, and 11 dedicated AI safety/reliability scenarios.
 2. **Run Frontend Tests (31 Tests)**:
    ```bash
    cd frontend
@@ -86,7 +86,7 @@ This guide provides step-by-step instructions for competition judges and evaluat
    ```
    *Expected Output: `31 passed across 6 test files in ~750ms`*
    - Covers: API client queries, aerosol fingerprint ratio diagnostics ($PM_{2.5}/PM_{10}$), GRAP emergency stage mapping, multi-generational cohort matrix, transit emissions math, EPA and CPCB breakpoint algorithms, and datetime formatters.
-3. **Total Automated Tests**: **89 / 89 passing (100% success rate)**.
+3. **Total Automated Tests**: **90 / 90 passing (100% success rate)**.
 
 ---
 

@@ -7,7 +7,7 @@
 [![Google Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-4285F4.svg?style=flat&logo=google)](https://ai.google.dev)
 [![Open-Meteo](https://img.shields.io/badge/Open--Meteo-Live_AQI-10B981.svg?style=flat)](https://open-meteo.com)
 [![CPCB India](https://img.shields.io/badge/CPCB-National_AQI-84CC16.svg?style=flat)](https://cpcb.nic.in)
-[![Tests Passing](https://img.shields.io/badge/Tests-89%20Passed-10B981.svg?style=flat)](#automated-testing-suite)
+[![Tests Passing](https://img.shields.io/badge/Tests-90%20Passed-10B981.svg?style=flat)](#automated-testing-suite)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > Built for **Challenge 6 – Urban Air Quality Assistant**. An enterprise-grade environmental intelligence platform engineered to translate multi-spectral atmospheric sensor telemetry into actionable, personalized respiratory and cardiovascular health directives for urban families.
@@ -234,14 +234,15 @@ cp .env.example .env
 
 ## Automated Testing Suite
 
-The project includes an exhaustive automated test suite with **89 passing tests (100% pass rate)**.
+The project includes an exhaustive automated test suite with **90 passing tests (100% pass rate)**.
 
-### Run Backend Tests (58 Passed)
+### Run Backend Tests (59 Passed)
 ```bash
 cd backend
 python -m pytest
 ```
 *Validates:*
+- Complete 12-step end-to-end user journey for Challenge 6.
 - Official CPCB linear breakpoint interpolation and validation criteria.
 - US EPA and European AQI standard mapping.
 - 5-dimension structured cohort recommendations.
