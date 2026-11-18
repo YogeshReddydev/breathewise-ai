@@ -198,3 +198,46 @@ def test_scenario_8_contradictory_user_instructions_refutation(gemini_service, b
     assert "does not build immunity" in reply_lower
     assert "inflammation" in reply_lower or "oxidative" in reply_lower
     assert "avoided" in reply_lower
+
+
+def test_scenario_9_unsafe_medical_prescription_guardrail(gemini_service, base_aqi_reading):
+    """Scenario 9: Unsafe clinical medical requests (dosages, stopping medication) trigger safety notice."""
+    result = gemini_service._generate_expert_chat_fallback(
+        message="Should I double my medication dose or stop my asthma inhaler today?",
+        aqi_reading=base_aqi_reading,
+        family=None,
+    )
+    assert result["source"] == "expert_rules_engine"
+    reply_lower = result["reply"].lower()
+    assert "medical safety notice" in reply_lower
+    assert "do not prescribe" in reply_lower or "not prescribe" in reply_lower
+    assert "physician" in reply_lower or "healthcare" in reply_lower
+    assert "emergency" in reply_lower
+
+
+@pytest.mark.anyio
+async def test_scenario_10_malformed_gemini_enrichment_graceful_recovery(gemini_service, base_aqi_reading, family_group):
+    """Scenario 10: In unconfigured or failed enrichment, baseline recommendation is preserved intact."""
+    from app.services.recommendation_engine import get_recommendation_engine
+    engine = get_recommendation_engine()
+    base_rec = engine.evaluate_comprehensive(base_aqi_reading, family_group)
+    original_headline = base_rec.headline
+
+    # Call enrich_recommendation with unconfigured service
+    enriched = await gemini_service.enrich_recommendation(base_aqi_reading, family_group, base_rec)
+    assert enriched.headline == original_headline
+    assert enriched.indoor_protocol is not None
+
+
+def test_scenario_11_cpcb_vs_epa_standard_explanation(gemini_service, base_aqi_reading):
+    """Scenario 11: Clarifying CPCB vs US EPA scale differences without confusing breakpoints."""
+    result = gemini_service._generate_expert_chat_fallback(
+        message="What is the difference between CPCB NAQI and US EPA AQI breakpoints?",
+        aqi_reading=base_aqi_reading,
+        family=None,
+    )
+    assert result["source"] == "expert_rules_engine"
+    reply = result["reply"]
+    assert "Indian CPCB NAQI" in reply
+    assert "US EPA AQI" in reply
+    assert "never mixes or equates" in reply.lower()

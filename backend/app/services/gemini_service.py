@@ -19,6 +19,7 @@ STRICT GROUND-TRUTH & INTEGRITY CONSTRAINTS:
 4. Support Indian CPCB NAQI, US EPA AQI, and European AQI explicitly. NEVER mix their breakpoints or treat them as identical.
 5. NEVER provide definitive clinical medical diagnoses or claim that any action guarantees health protection. Always frame guidance as environmental risk reduction.
 6. REJECT HARMFUL MYTHS & CONTRADICTORY CLAIMS: If a user suggests that exposure to smog, smoke, or elevated PM2.5 "trains immunity" or "cleanses lungs," scientifically refute the claim. Explain that fine combustion particulates cause alveolar oxidation and systemic inflammation, not immunological adaptation.
+7. STRICT MEDICAL CLINICAL GUARDRAIL: NEVER prescribe medications, recommend specific drug dosages, or advise users to stop or alter prescribed inhalers or therapies. Direct medical dosage or prescription inquiries to licensed healthcare professionals immediately.
 """
 
 
@@ -169,7 +170,21 @@ Respond strictly in valid JSON format with keys:
         loc_name = aqi_reading.location_name if aqi_reading else "your area"
         pm2_5_val = aqi_reading.pollutants.pm2_5 if aqi_reading else 18.0
 
-        # 0. Contradictory health myths or dangerous instructions
+        # 0A. Unsafe clinical medical requests & prescription / drug dosage inquiries
+        if any(w in msg_lower for w in ["dosage", "dose", "prescribe", "prescription", "medication", "medicine", "pill", "steroid", "prednisone", "stop taking", "stop inhaler", "diagnose", "diagnosis"]):
+            reply = (
+                "Medical Safety Notice: BreatheWise AI provides environmental risk reduction guidance based on ambient air pollution standards (CPCB and US EPA). "
+                "We do NOT prescribe medications, adjust drug dosages, or provide clinical medical diagnoses. "
+                "Never alter or discontinue prescribed asthma, cardiovascular, or respiratory therapies without direct guidance from your licensed physician or healthcare specialist. "
+                "If experiencing acute respiratory distress, severe wheezing, or chest pain, seek immediate emergency medical care."
+            )
+            return {
+                "reply": reply,
+                "model": "breathewise-expert-rules",
+                "source": "expert_rules_engine",
+            }
+
+        # 0B. Contradictory health myths or dangerous instructions
         if any(w in msg_lower for w in ["immunity", "strengthen lungs", "build resistance", "good for lungs", "healthy to breathe smog", "healthy to breathe smoke", "deep breath in smog"]):
             reply = (
                 f"Scientific Clarification: Inhaling airborne particulate matter (PM2.5/PM10) or photochemical smog does NOT build immunity or strengthen lung capacity. "

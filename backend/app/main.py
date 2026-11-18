@@ -38,18 +38,31 @@ app = FastAPI(
 
 settings = get_settings()
 
-# Setup CORS
+# Setup CORS with explicit origin whitelist
+cors_origins = settings.cors_origins_list if settings.cors_origins_list else ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list or ["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
 
 @app.middleware("http")
 async def security_and_rate_limit_middleware(request: Request, call_next):
+    # Payload size defense (1MB max payload)
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > 1_048_576:
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": "Request payload exceeds 1MB limit."},
+                )
+        except ValueError:
+            pass
+
     client_ip = request.client.host if request.client else "unknown"
     path = request.url.path
 

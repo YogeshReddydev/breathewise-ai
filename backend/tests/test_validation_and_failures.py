@@ -121,3 +121,63 @@ def test_provider_failover_resilience():
     # Fallback lookup
     default_p = registry.get_provider("non_existent_provider")
     assert default_p.name == "open-meteo"
+
+
+def test_chat_message_validation_empty_or_whitespace():
+    """Verify that chat messages cannot be solely whitespace or empty."""
+    res_empty = client.post("/api/chat/message", json={"message": "   "})
+    assert res_empty.status_code == 400
+    assert "whitespace" in res_empty.json()["detail"].lower()
+
+
+def test_chat_message_validation_too_long():
+    """Verify that overly long chat messages exceeding 1000 characters are rejected."""
+    res_long = client.post("/api/chat/message", json={"message": "x" * 1001})
+    assert res_long.status_code == 422
+
+
+def test_payload_too_large_rejection():
+    """Verify that request bodies exceeding 1MB are rejected with 413 Payload Too Large."""
+    res = client.post(
+        "/api/chat/message",
+        headers={"Content-Length": "2000000"},
+        content=b"oversized_payload",
+    )
+    assert res.status_code == 413
+    assert "exceeds" in res.json()["detail"].lower()
+
+
+def test_recommendations_paired_coordinates_validation():
+    """Verify recommendation endpoints reject single coordinate inputs."""
+    # Comprehensive endpoint
+    res_comp_lat = client.get("/api/recommendations/comprehensive?lat=28.6")
+    assert res_comp_lat.status_code == 400
+    assert "Both latitude and longitude must be provided together" in res_comp_lat.json()["detail"]
+
+    # Evaluate-custom endpoint
+    res_custom_lon = client.post("/api/recommendations/evaluate-custom", json={"lon": 77.2})
+    assert res_custom_lon.status_code == 400
+    assert "Both latitude and longitude must be provided together" in res_custom_lon.json()["detail"]
+
+
+def test_cpcb_breakpoint_boundaries_and_extreme_capping():
+    """Test CPCB sub-index calculations at exact boundary points and extreme capping."""
+    # Zero concentration -> 0
+    sub_zero = calculate_sub_index("pm2_5", 0.0)
+    assert sub_zero == 0
+
+    # Exact boundary 30.0 µg/m³ -> 50
+    sub_30 = calculate_sub_index("pm2_5", 30.0)
+    assert sub_30 == 50
+
+    # Exact boundary 60.0 µg/m³ -> 100
+    sub_60 = calculate_sub_index("pm2_5", 60.0)
+    assert sub_60 == 100
+
+    # Severe concentration 380.0 µg/m³ -> 500 max cap
+    sub_severe = calculate_sub_index("pm2_5", 500.0)
+    assert sub_severe == 500
+
+    # Extreme value exceeding 500 µg/m³ capped at 500
+    sub_extreme = calculate_sub_index("pm2_5", 750.0)
+    assert sub_extreme == 500
