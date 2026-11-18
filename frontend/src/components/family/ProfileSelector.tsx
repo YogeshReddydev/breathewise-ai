@@ -76,28 +76,31 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-all shadow-sm"
+            aria-label="Add new household member"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >
-            <UserPlus className="w-3.5 h-3.5" />
+            <UserPlus className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Add Member</span>
           </button>
 
           {isDemo ? (
             <button
               onClick={onClearDemo}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-red-950/40 text-slate-300 hover:text-red-300 border border-white/10 hover:border-red-500/30 text-xs font-semibold transition-all"
+              aria-label="Remove fictional demonstration profiles"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-red-950/40 text-slate-300 hover:text-red-300 border border-white/10 hover:border-red-500/30 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
               title="Remove fictional demonstration profiles to create your own household"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">Clear Demo</span>
             </button>
           ) : (
             <button
               onClick={onResetDemo}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-white/10 text-xs font-semibold transition-all"
+              aria-label="Restore standard 4-generation demonstration profiles"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-white/10 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
               title="Restore standard 4-generation demonstration profiles"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">Reset Demo</span>
             </button>
           )}
@@ -152,8 +155,18 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
             return (
               <div
                 key={member.id}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                aria-label={`Select profile for ${member.name}, ${member.relationship}, ${member.vulnerability_tier}`}
                 onClick={() => onSelectMember(member.id)}
-                className={`p-4 rounded-xl text-left transition-all duration-200 border relative group cursor-pointer ${
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectMember(member.id);
+                  }
+                }}
+                className={`p-4 rounded-xl text-left transition-all duration-200 border relative group cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none ${
                   isSelected
                     ? 'bg-[#142347] border-emerald-500/80 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/40'
                     : 'bg-[#0D162B] border-white/5 hover:bg-[#121E3B] hover:border-white/15'
@@ -166,10 +179,11 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
                       e.stopPropagation();
                       onRemoveMember(member.id);
                     }}
-                    className="absolute top-2.5 right-2.5 p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={`Remove member ${member.name}`}
+                    className="absolute top-2.5 right-2.5 p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
                     title="Remove member"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 )}
 
