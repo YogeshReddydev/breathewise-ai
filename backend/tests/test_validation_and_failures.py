@@ -58,6 +58,34 @@ def test_invalid_user_coordinate_inputs():
     assert res_lon.status_code == 400
     assert "Invalid coordinates" in res_lon.json()["detail"]
 
+    # NaN / Inf coordinate rejection
+    res_nan = client.get("/api/aqi/current?lat=nan&lon=77.2")
+    assert res_nan.status_code == 400
+    res_inf = client.get("/api/aqi/current?lat=28.6&lon=inf")
+    assert res_inf.status_code == 400
+
+
+def test_security_headers_present():
+    """Verify OWASP recommended security headers on all responses."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert response.headers.get("X-Frame-Options") == "DENY"
+    assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+
+
+def test_in_memory_rate_limiting():
+    """Verify in-memory rate limiter throttles excessive requests."""
+    from app.core.security import InMemoryRateLimiter
+    limiter = InMemoryRateLimiter(max_requests=3, window_seconds=10)
+    client_ip = "192.168.1.100"
+    assert limiter.is_allowed(client_ip) is True
+    assert limiter.is_allowed(client_ip) is True
+    assert limiter.is_allowed(client_ip) is True
+    # 4th request must be rejected
+    assert limiter.is_allowed(client_ip) is False
+
+
 
 def test_gemini_failure_fallback_resilience():
     """Test that when Gemini service client is unconfigured or fails, expert deterministic chat responds safely."""

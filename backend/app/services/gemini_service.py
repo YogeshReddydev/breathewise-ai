@@ -18,6 +18,7 @@ STRICT GROUND-TRUTH & INTEGRITY CONSTRAINTS:
 3. Clearly distinguish between measured ambient concentrations and estimated tailpipe/emissions factors.
 4. Support Indian CPCB NAQI, US EPA AQI, and European AQI explicitly. NEVER mix their breakpoints or treat them as identical.
 5. NEVER provide definitive clinical medical diagnoses or claim that any action guarantees health protection. Always frame guidance as environmental risk reduction.
+6. REJECT HARMFUL MYTHS & CONTRADICTORY CLAIMS: If a user suggests that exposure to smog, smoke, or elevated PM2.5 "trains immunity" or "cleanses lungs," scientifically refute the claim. Explain that fine combustion particulates cause alveolar oxidation and systemic inflammation, not immunological adaptation.
 """
 
 
@@ -167,6 +168,19 @@ Respond strictly in valid JSON format with keys:
         aqi_val = aqi_reading.aqi_us if aqi_reading else 65
         loc_name = aqi_reading.location_name if aqi_reading else "your area"
         pm2_5_val = aqi_reading.pollutants.pm2_5 if aqi_reading else 18.0
+
+        # 0. Contradictory health myths or dangerous instructions
+        if any(w in msg_lower for w in ["immunity", "strengthen lungs", "build resistance", "good for lungs", "healthy to breathe smog", "healthy to breathe smoke", "deep breath in smog"]):
+            reply = (
+                f"Scientific Clarification: Inhaling airborne particulate matter (PM2.5/PM10) or photochemical smog does NOT build immunity or strengthen lung capacity. "
+                f"Unlike biological antigens, particulate matter consists of microscopic combustion products, heavy metals, and aerosols that trigger alveolar inflammation, oxidative stress, and vascular endothelial damage. "
+                f"In current conditions ({loc_name}, AQI {aqi_val}), deep breathing outdoors should be avoided; prioritize clean indoor air with active HEPA filtration."
+            )
+            return {
+                "reply": reply,
+                "model": "breathewise-expert-rules",
+                "source": "expert_rules_engine",
+            }
 
         # 1. Sustainable transport / commuting queries
         if any(w in msg_lower for w in ["transit", "commute", "metro", "bus", "carpool", "emission", "transport", "bike", "cycle"]):
