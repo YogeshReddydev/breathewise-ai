@@ -123,7 +123,13 @@ export const AQIGaugeHero: React.FC<AQIGaugeHeroProps> = ({
         <div className="flex items-center gap-2 text-xs">
           <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50/90 text-emerald-800 border border-emerald-200 font-medium shadow-xs">
             <span className="telemetry-beacon text-emerald-600 w-2 h-2 rounded-full mr-0.5" />
-            <span>{reading.data_type === 'forecast' ? 'Numerical Forecast Model' : 'Live Ground Telemetry'}</span>
+            <span>
+              {reading.provider === 'waqi'
+                ? 'Ground Monitoring Station'
+                : reading.data_type === 'forecast'
+                ? 'Numerical Forecast Model'
+                : 'Atmospheric Reanalysis Model (CAMS)'}
+            </span>
           </span>
           <span className="hidden sm:flex items-center gap-1 px-3 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-200 font-mono text-[11px]">
             <Database className="w-3 h-3 text-teal-600" />

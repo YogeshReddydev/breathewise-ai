@@ -120,7 +120,11 @@ export const CommunityIntelligenceCard: React.FC<CommunityIntelligenceCardProps>
               <div>
                 <span className="text-slate-500 text-[11px] block">Data Processing Model</span>
                 <span className="font-semibold text-slate-900 font-mono">
-                  {reading.data_type === 'forecast' ? 'ECMWF / CAMS Atmospheric' : 'Continuous Regulatory Station'}
+                  {reading.provider === 'waqi'
+                    ? 'Continuous Regulatory Station'
+                    : reading.data_type === 'forecast'
+                    ? 'Numerical Prediction Model'
+                    : 'ECMWF / CAMS Atmospheric Reanalysis'}
                 </span>
               </div>
               <div>

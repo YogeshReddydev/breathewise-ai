@@ -163,7 +163,7 @@ class OpenMeteoAQIProvider(BaseAQIProvider):
             cpcb=cpcb_reading,
             us_epa=us_epa_reading,
             european=european_reading,
-            data_type="observation",
+            data_type="reanalysis_model",
             source_attribution="Open-Meteo High-Resolution Atmospheric Models (CAMS/ECMWF)",
         )
 
