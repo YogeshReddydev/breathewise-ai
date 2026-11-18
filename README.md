@@ -20,7 +20,7 @@
 - 🌱 **Sustainable Living & Commuter Emissions Calculator**: Interactive calculator displaying single-trip, weekly, and annual $\text{CO}_2$ savings plus tailpipe $\text{PM}_{2.5}$ reductions, correlated with real-time ambient air safety.
 - 🛡️ **Family Protection Mode**: Create, edit, and delete real household members with voluntary sensitivity selections. Demonstration profiles (Marcus, Elena, Leo, Sophia) are badged as fictional simulation data with one-click clear and restore controls.
 - 🕒 **24-Hour & 48-Hour Extended Horizon**: Extended numerical simulation curve with clean-air and peak pollution window highlights.
-- 🧪 **Complete Automated Test Suite**: 37 backend pytest tests and 5 frontend vitest tests passing with 100% success.
+- 🧪 **Complete Automated Test Suite**: 47 backend pytest tests and 5 frontend vitest tests passing with 100% success (including OWASP security headers, in-memory rate limiting, and 8 dedicated AI safety evaluation scenarios).
 
 ---
 
@@ -56,7 +56,7 @@ breathewise-ai/
 │   │   ├── services/              # Recommendation Engine, Sustainability, Gemini, AQI Coordinator
 │   │   ├── utils/                 # Official Indian CPCB NAQI linear interpolation engine
 │   │   └── api/                   # Telemetry, Recommendations, Profiles, Sustainability, Chat
-│   └── tests/                     # 32 automated pytest test cases
+│   └── tests/                     # 47 automated pytest test cases across 11 test suites
 └── frontend/
     ├── package.json               # Dependencies & scripts
     ├── tsconfig.json              # TypeScript strict configuration
@@ -114,7 +114,7 @@ The frontend dashboard will be available at: `http://localhost:5173`.
 
 ## Automated Testing Suite
 
-### Run All Backend Tests (37 Passed)
+### Run All Backend Tests (47 Passed)
 ```bash
 cd backend
 python -m pytest
@@ -127,6 +127,9 @@ Validates:
 - Fictional demonstration profile handling and custom member CRUD.
 - Input validation, coordinate bounds checking, and query sanitization.
 - Provider failover and error handling.
+- OWASP security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`).
+- Sliding-window in-memory rate limiting to protect public endpoints.
+- 8 dedicated AI safety evaluation scenarios (smog myth refutation, vulnerable cohort protections, zero data fabrication).
 
 ### Run All Frontend Tests (5 Passed)
 ```bash
