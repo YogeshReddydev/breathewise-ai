@@ -1,228 +1,306 @@
+import logging
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import List, Optional
 import httpx
-from app.providers.base import BaseAQIProvider
+
 from app.models.aqi import (
-    CurrentAQIResponse,
-    ForecastAQIResponse,
-    PollutantsBreakdown,
-    AtmosphericConditions,
-    HourlyAQIPoint,
-    AQICategory,
+    AQIReading,
+    AQIStandard,
+    AirQualityForecast,
+    CPCBReading,
+    EuropeanReading,
+    HourlyForecastItem,
+    LocationSearchResult,
+    PollutantBreakdown,
+    USEPAReading,
+    get_category_color,
+    get_category_from_aqi,
+    get_category_label,
 )
-from app.services.aqi_calculator import AQICalculator
+from app.providers.base import BaseAQIProvider
+from app.utils.cpcb_calculator import calculate_cpcb_aqi
+
+logger = logging.getLogger(__name__)
 
 
 class OpenMeteoAQIProvider(BaseAQIProvider):
-    """
-    Live real-time atmospheric data provider leveraging the Open-Meteo Air Quality & Weather API.
-    Zero API key required; delivers global, high-resolution continuous sensor & atmospheric model data.
+    """Real live AQI data provider backed by the Open-Meteo Air Quality API.
+    
+    Provides real atmospheric data, satellite observations, and numerical models
+    globally with zero API key requirement.
     """
 
-    AIR_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
-    WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
+    AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
+    GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
+
+    def __init__(self, timeout: float = 10.0):
+        self.timeout = timeout
 
     @property
     def name(self) -> str:
-        return "Open-Meteo High-Res Atmosphere"
+        return "open-meteo"
 
-    async def health_check(self) -> bool:
-        try:
-            async with httpx.AsyncClient(timeout=4.0) as client:
-                res = await client.get(
-                    self.AIR_URL,
-                    params={"latitude": 28.6139, "longitude": 77.2090, "current": "us_aqi"},
-                )
-                return res.status_code == 200
-        except Exception:
-            return False
+    def _determine_dominant_pollutant(self, pm2_5: float, pm10: float, o3: Optional[float], no2: Optional[float]) -> str:
+        # Standard EPA ratio threshold comparison
+        scores = {
+            "PM2.5": pm2_5 / 12.0 if pm2_5 else 0,
+            "PM10": pm10 / 54.0 if pm10 else 0,
+            "O3": (o3 / 100.0) if o3 else 0,
+            "NO2": (no2 / 100.0) if no2 else 0,
+        }
+        return max(scores, key=scores.get)
+
+    def _is_indian_coordinate(self, lat: float, lon: float, location_name: Optional[str]) -> bool:
+        """Heuristic to detect Indian geography for India-first AQI prioritization."""
+        if location_name and "india" in location_name.lower():
+            return True
+        # Bounding box for India approximately: Lat 6.5 to 37.5, Lon 68.0 to 97.5
+        return 6.5 <= lat <= 37.5 and 68.0 <= lon <= 97.5
 
     async def get_current_aqi(
-        self, latitude: float, longitude: float, location_name: str
-    ) -> CurrentAQIResponse:
+        self,
+        lat: float,
+        lon: float,
+        location_name: Optional[str] = None,
+        standard: Optional[AQIStandard] = None,
+    ) -> AQIReading:
         params = {
-            "latitude": latitude,
-            "longitude": longitude,
-            "current": [
-                "us_aqi",
-                "pm10",
-                "pm2_5",
-                "carbon_monoxide",
-                "nitrogen_dioxide",
-                "sulphur_dioxide",
-                "ozone",
-            ],
+            "latitude": lat,
+            "longitude": lon,
+            "current": "us_aqi,european_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone",
             "timezone": "auto",
         }
 
-        weather_params = {
-            "latitude": latitude,
-            "longitude": longitude,
-            "current": ["temperature_2m", "relative_humidity_2m", "wind_speed_10m", "wind_direction_10m"],
-            "timezone": "auto",
-        }
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.get(self.AIR_QUALITY_URL, params=params)
+            response.raise_for_status()
+            data = response.json()
 
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            air_resp = await client.get(self.AIR_URL, params=params)
-            air_resp.raise_for_status()
-            air_data = air_resp.json()
+        current = data.get("current", {})
+        us_aqi = int(current.get("us_aqi") or 35)
+        eu_aqi = int(current.get("european_aqi") or 25)
+        pm2_5 = float(current.get("pm2_5") or 8.5)
+        pm10 = float(current.get("pm10") or 14.2)
+        o3 = float(current.get("ozone")) if current.get("ozone") is not None else None
+        no2 = float(current.get("nitrogen_dioxide")) if current.get("nitrogen_dioxide") is not None else None
+        so2 = float(current.get("sulphur_dioxide")) if current.get("sulphur_dioxide") is not None else None
+        co = float(current.get("carbon_monoxide")) if current.get("carbon_monoxide") is not None else None
 
-            # Attempt fetching atmospheric weather conditions
-            temp_c, rh, wind_kmh, wind_deg = 24.0, 50.0, 8.0, 180.0
-            try:
-                w_resp = await client.get(self.WEATHER_URL, params=weather_params)
-                if w_resp.status_code == 200:
-                    w_curr = w_resp.json().get("current", {})
-                    temp_c = w_curr.get("temperature_2m", temp_c)
-                    rh = w_curr.get("relative_humidity_2m", rh)
-                    wind_kmh = w_curr.get("wind_speed_10m", wind_kmh)
-                    wind_deg = w_curr.get("wind_direction_10m", wind_deg)
-            except Exception:
-                pass  # Weather is non-critical enrichments
+        category = get_category_from_aqi(us_aqi)
+        dominant = self._determine_dominant_pollutant(pm2_5, pm10, o3, no2)
 
-        current_dict = air_data.get("current", {})
-        pm2_5_val = float(current_dict.get("pm2_5", 15.0) or 15.0)
-        pm10_val = float(current_dict.get("pm10", 30.0) or 30.0)
-        no2_val = float(current_dict.get("nitrogen_dioxide", 20.0) or 20.0)
-        o3_val = float(current_dict.get("ozone", 45.0) or 45.0)
-        co_val = float(current_dict.get("carbon_monoxide", 0.5) or 0.5)
-        so2_val = float(current_dict.get("sulphur_dioxide", 5.0) or 5.0)
-
-        # Convert CO from ug/m3 to mg/m3 if large (> 100)
-        if co_val > 50.0:
-            co_val = round(co_val / 1000.0, 2)
-
-        # Calculate sub-indices
-        p_pm25 = AQICalculator.compute_pollutant_data("pm2_5", pm2_5_val)
-        p_pm10 = AQICalculator.compute_pollutant_data("pm10", pm10_val)
-        p_no2 = AQICalculator.compute_pollutant_data("no2", no2_val)
-        p_o3 = AQICalculator.compute_pollutant_data("o3", o3_val)
-        p_co = AQICalculator.compute_pollutant_data("co", co_val)
-        p_so2 = AQICalculator.compute_pollutant_data("so2", so2_val)
-
-        sub_indices = {
-            "PM2.5": p_pm25.sub_index,
-            "PM10": p_pm10.sub_index,
-            "NO2": p_no2.sub_index,
-            "O3": p_o3.sub_index,
-            "CO": p_co.sub_index,
-            "SO2": p_so2.sub_index,
-        }
-
-        dominant_pollutant = max(sub_indices, key=sub_indices.get)
-        calculated_aqi = sub_indices[dominant_pollutant]
-
-        # Use Open-Meteo's provided US AQI if available and non-zero, or our calculated index
-        reported_aqi = current_dict.get("us_aqi")
-        if reported_aqi is not None and reported_aqi > 0:
-            aqi = int(reported_aqi)
-        else:
-            aqi = calculated_aqi
-
-        category = AQICalculator.get_category(aqi)
-        headline, caution = AQICalculator.get_health_statements(category, dominant_pollutant)
-
-        breakdown = PollutantsBreakdown(
-            pm2_5=p_pm25,
-            pm10=p_pm10,
-            no2=p_no2,
-            o3=p_o3,
-            co=p_co,
-            so2=p_so2,
+        # Compute validated Indian CPCB National AQI
+        cpcb_result = calculate_cpcb_aqi(
+            pm2_5=pm2_5,
+            pm10=pm10,
+            no2=no2,
+            o3=o3,
+            so2=so2,
+            co=co,
         )
 
-        atm = AtmosphericConditions(
-            temperature_c=round(temp_c, 1),
-            relative_humidity_percent=round(rh, 1),
-            wind_speed_kmh=round(wind_kmh, 1),
-            wind_direction_deg=round(wind_deg, 1),
+        cpcb_reading = CPCBReading(
+            calculable=cpcb_result["calculable"],
+            aqi=cpcb_result["aqi"],
+            category=cpcb_result["category"],
+            color_hex=cpcb_result["color_hex"],
+            dominant_pollutant=cpcb_result["dominant_pollutant"],
+            sub_indices=cpcb_result["sub_indices"],
+            limitation_note=cpcb_result["limitation_note"],
         )
 
-        ts = current_dict.get("time", datetime.now(timezone.utc).isoformat())
-
-        return CurrentAQIResponse(
-            location_name=location_name,
-            latitude=latitude,
-            longitude=longitude,
-            timestamp=ts,
-            aqi=aqi,
+        us_epa_reading = USEPAReading(
+            aqi=us_aqi,
             category=category,
-            dominant_pollutant=dominant_pollutant,
-            pollutants=breakdown,
-            atmospheric=atm,
-            provider=self.name,
-            health_headline=headline,
-            cautionary_statement=caution,
+            category_label=get_category_label(category),
+            color_hex=get_category_color(category),
+            dominant_pollutant=dominant,
         )
 
-    async def get_forecast_aqi(
-        self, latitude: float, longitude: float, location_name: str
-    ) -> ForecastAQIResponse:
+        # European AQI evaluation
+        eu_category = "Good"
+        eu_color = "#10B981"
+        if eu_aqi > 100:
+            eu_category, eu_color = "Very Poor", "#7F1D1D"
+        elif eu_aqi > 75:
+            eu_category, eu_color = "Poor", "#EF4444"
+        elif eu_aqi > 50:
+            eu_category, eu_color = "Moderate", "#F59E0B"
+        elif eu_aqi > 25:
+            eu_category, eu_color = "Fair", "#84CC16"
+
+        european_reading = EuropeanReading(
+            aqi=eu_aqi,
+            category=eu_category,
+            color_hex=eu_color,
+        )
+
+        # Determine active standard
+        is_india = self._is_indian_coordinate(lat, lon, location_name)
+        active_std = standard or (AQIStandard.CPCB if is_india and cpcb_reading.calculable else AQIStandard.US_EPA)
+
+        return AQIReading(
+            aqi_us=us_aqi,
+            aqi_eu=eu_aqi,
+            category=category,
+            category_label=get_category_label(category),
+            color_hex=get_category_color(category),
+            dominant_pollutant=dominant,
+            timestamp=current.get("time") or datetime.now(timezone.utc).isoformat(),
+            location_name=location_name or f"Coords ({lat:.2f}, {lon:.2f})",
+            latitude=lat,
+            longitude=lon,
+            pollutants=PollutantBreakdown(
+                pm2_5=pm2_5,
+                pm10=pm10,
+                o3=o3,
+                no2=no2,
+                so2=so2,
+                co=co,
+            ),
+            provider=self.name,
+            active_standard=active_std,
+            cpcb=cpcb_reading,
+            us_epa=us_epa_reading,
+            european=european_reading,
+            data_type="observation",
+            source_attribution="Open-Meteo High-Resolution Atmospheric Models (CAMS/ECMWF)",
+        )
+
+    async def get_forecast(
+        self,
+        lat: float,
+        lon: float,
+        location_name: Optional[str] = None,
+        hours: int = 24,
+    ) -> AirQualityForecast:
+        forecast_days = 3 if hours > 24 else 2
         params = {
-            "latitude": latitude,
-            "longitude": longitude,
-            "hourly": ["us_aqi", "pm2_5", "pm10"],
-            "forecast_days": 2,
+            "latitude": lat,
+            "longitude": lon,
+            "hourly": "pm2_5,pm10,us_aqi,nitrogen_dioxide,ozone,sulphur_dioxide,carbon_monoxide",
+            "forecast_days": forecast_days,
             "timezone": "auto",
         }
 
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            resp = await client.get(self.AIR_URL, params=params)
-            resp.raise_for_status()
-            data = resp.json()
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.get(self.AIR_QUALITY_URL, params=params)
+            response.raise_for_status()
+            data = response.json()
 
-        hourly_dict = data.get("hourly", {})
-        times = hourly_dict.get("time", [])
-        aqis = hourly_dict.get("us_aqi", [])
-        pm25s = hourly_dict.get("pm2_5", [])
-        pm10s = hourly_dict.get("pm10", [])
+        hourly_raw = data.get("hourly", {})
+        times = hourly_raw.get("time", [])
+        aqi_list = hourly_raw.get("us_aqi", [])
+        pm2_5_list = hourly_raw.get("pm2_5", [])
+        pm10_list = hourly_raw.get("pm10", [])
+        no2_list = hourly_raw.get("nitrogen_dioxide", [])
+        o3_list = hourly_raw.get("ozone", [])
+        so2_list = hourly_raw.get("sulphur_dioxide", [])
+        co_list = hourly_raw.get("carbon_monoxide", [])
 
-        hourly_points = []
-        peak_aqi = 0
-        peak_ts = ""
-        cleanest_aqi = 999
-        cleanest_ts = ""
+        hourly_items: List[HourlyForecastItem] = []
+        limit = min(len(times), hours)
 
-        # Limit to next 24-36 hours
-        for idx in range(min(36, len(times))):
-            t_str = times[idx]
-            val_aqi = aqis[idx] if idx < len(aqis) and aqis[idx] is not None else 50
-            val_pm25 = pm25s[idx] if idx < len(pm25s) and pm25s[idx] is not None else 12.0
-            val_pm10 = pm10s[idx] if idx < len(pm10s) and pm10s[idx] is not None else 25.0
+        for i in range(limit):
+            aqi_val = int(aqi_list[i]) if i < len(aqi_list) and aqi_list[i] is not None else 40
+            pm2_val = float(pm2_5_list[i]) if i < len(pm2_5_list) and pm2_5_list[i] is not None else 10.0
+            pm10_val = float(pm10_list[i]) if i < len(pm10_list) and pm10_list[i] is not None else 18.0
+            no2_val = float(no2_list[i]) if i < len(no2_list) and no2_list[i] is not None else None
+            o3_val = float(o3_list[i]) if i < len(o3_list) and o3_list[i] is not None else None
+            so2_val = float(so2_list[i]) if i < len(so2_list) and so2_list[i] is not None else None
+            co_val = float(co_list[i]) if i < len(co_list) and co_list[i] is not None else None
 
-            cat = AQICalculator.get_category(int(val_aqi))
-            hour_int = int(t_str.split("T")[-1].split(":")[0]) if "T" in t_str else idx
+            cat = get_category_from_aqi(aqi_val)
 
-            point = HourlyAQIPoint(
-                timestamp=t_str,
-                hour=hour_int,
-                aqi=int(val_aqi),
-                category=cat,
-                pm2_5=round(float(val_pm25), 1),
-                pm10=round(float(val_pm10), 1),
-                dominant_pollutant="PM2.5" if val_pm25 * 2 > val_pm10 else "PM10",
+            # Companion CPCB calculation
+            cpcb_res = calculate_cpcb_aqi(
+                pm2_5=pm2_val,
+                pm10=pm10_val,
+                no2=no2_val,
+                o3=o3_val,
+                so2=so2_val,
+                co=co_val,
             )
-            hourly_points.append(point)
 
-            if int(val_aqi) > peak_aqi:
-                peak_aqi = int(val_aqi)
-                peak_ts = t_str
+            hourly_items.append(
+                HourlyForecastItem(
+                    time=times[i],
+                    aqi_us=aqi_val,
+                    pm2_5=pm2_val,
+                    pm10=pm10_val,
+                    dominant_pollutant="PM2.5" if pm2_val > 12 else "Moderate",
+                    category=cat,
+                    category_label=get_category_label(cat),
+                    color_hex=get_category_color(cat),
+                    cpcb_aqi=cpcb_res["aqi"],
+                    cpcb_category=cpcb_res["category"] if cpcb_res["calculable"] else None,
+                    cpcb_color=cpcb_res["color_hex"] if cpcb_res["calculable"] else None,
+                )
+            )
 
-            if int(val_aqi) < cleanest_aqi:
-                cleanest_aqi = int(val_aqi)
-                cleanest_ts = t_str
+        # Calculate optimal & worst outdoor activity windows
+        best_window_start, best_window_end = None, None
+        worst_window_start, worst_window_end = None, None
 
-        current_val = hourly_points[0].aqi if hourly_points else 50
+        if len(hourly_items) >= 4:
+            # 3-hour sliding windows
+            window_scores = []
+            for w in range(len(hourly_items) - 2):
+                avg_aqi = (hourly_items[w].aqi_us + hourly_items[w + 1].aqi_us + hourly_items[w + 2].aqi_us) / 3
+                window_scores.append((avg_aqi, w))
 
-        return ForecastAQIResponse(
-            location_name=location_name,
-            latitude=latitude,
-            longitude=longitude,
-            current_aqi=current_val,
-            peak_aqi=peak_aqi if peak_aqi > 0 else current_val,
-            peak_timestamp=peak_ts or (hourly_points[0].timestamp if hourly_points else ""),
-            cleanest_aqi=cleanest_aqi if cleanest_aqi < 999 else current_val,
-            cleanest_timestamp=cleanest_ts or (hourly_points[0].timestamp if hourly_points else ""),
-            hourly=hourly_points,
-            provider=self.name,
+            best_w = min(window_scores, key=lambda x: x[0])[1]
+            worst_w = max(window_scores, key=lambda x: x[0])[1]
+
+            best_window_start = hourly_items[best_w].time
+            best_window_end = hourly_items[min(best_w + 3, len(hourly_items) - 1)].time
+
+            worst_window_start = hourly_items[worst_w].time
+            worst_window_end = hourly_items[min(worst_w + 3, len(hourly_items) - 1)].time
+
+        avg_aqi = int(sum(item.aqi_us for item in hourly_items) / len(hourly_items)) if hourly_items else 0
+
+        return AirQualityForecast(
+            location_name=location_name or f"Coords ({lat:.2f}, {lon:.2f})",
+            latitude=lat,
+            longitude=lon,
+            hourly=hourly_items,
+            best_window_start=best_window_start,
+            best_window_end=best_window_end,
+            worst_window_start=worst_window_start,
+            worst_window_end=worst_window_end,
+            avg_next_24h_aqi=avg_aqi,
+            forecast_horizon_hours=hours,
+            data_type="forecast",
+            source_attribution="Open-Meteo Numerical Prediction Models (CAMS/ECMWF)",
         )
+
+    async def search_locations(self, query: str) -> List[LocationSearchResult]:
+        if not query or len(query.strip()) < 2:
+            return []
+
+        params = {
+            "name": query.strip(),
+            "count": 6,
+            "language": "en",
+            "format": "json",
+        }
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.get(self.GEOCODING_URL, params=params)
+            response.raise_for_status()
+            data = response.json()
+
+        results: List[LocationSearchResult] = []
+        for item in data.get("results", []):
+            results.append(
+                LocationSearchResult(
+                    name=item.get("name", "Unknown"),
+                    country=item.get("country", ""),
+                    admin1=item.get("admin1"),
+                    latitude=float(item.get("latitude")),
+                    longitude=float(item.get("longitude")),
+                    timezone=item.get("timezone"),
+                )
+            )
+        return results

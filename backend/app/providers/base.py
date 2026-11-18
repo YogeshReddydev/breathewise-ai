@@ -1,31 +1,40 @@
 from abc import ABC, abstractmethod
-from app.models.aqi import CurrentAQIResponse, ForecastAQIResponse
+from typing import List, Optional
+from app.models.aqi import AQIReading, AQIStandard, AirQualityForecast, LocationSearchResult
 
 
 class BaseAQIProvider(ABC):
-    """Abstract Base Class for AQI Data Providers."""
+    """Abstract Base Class for modular real-time AQI providers."""
 
     @property
     @abstractmethod
     def name(self) -> str:
-        """Name of the AQI provider."""
+        """Provider identifier."""
         pass
 
     @abstractmethod
     async def get_current_aqi(
-        self, latitude: float, longitude: float, location_name: str
-    ) -> CurrentAQIResponse:
-        """Retrieve real-time air quality index and pollutant concentrations."""
+        self,
+        lat: float,
+        lon: float,
+        location_name: Optional[str] = None,
+        standard: Optional[AQIStandard] = None,
+    ) -> AQIReading:
+        """Fetch current air quality reading for coordinates."""
         pass
 
     @abstractmethod
-    async def get_forecast_aqi(
-        self, latitude: float, longitude: float, location_name: str
-    ) -> ForecastAQIResponse:
-        """Retrieve multi-hour atmospheric forecast and peak pollution predictions."""
+    async def get_forecast(
+        self,
+        lat: float,
+        lon: float,
+        location_name: Optional[str] = None,
+        hours: int = 24,
+    ) -> AirQualityForecast:
+        """Fetch hourly air quality forecast for coordinates."""
         pass
 
     @abstractmethod
-    async def health_check(self) -> bool:
-        """Verify provider availability."""
+    async def search_locations(self, query: str) -> List[LocationSearchResult]:
+        """Search cities and coordinates matching query."""
         pass

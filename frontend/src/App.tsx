@@ -1,216 +1,202 @@
-import React, { useState, useEffect } from 'react';
-import {
-  CityLocation,
-  CurrentAQIResponse,
-  ForecastAQIResponse,
-  RecommendationResponse,
-  FamilyMember,
-} from './types';
-import {
-  fetchMajorCities,
-  fetchCurrentAQI,
-  fetchForecastAQI,
-  fetchRecommendations,
-  fetchFamilyMembers,
-  setActiveFamilyMember,
-  createFamilyMember,
-} from './services/api';
-import { Navbar } from './components/Navbar';
-import { AQIGauge } from './components/AQIGauge';
-import { PollutantGrid } from './components/PollutantGrid';
-import { ForecastChart } from './components/ForecastChart';
-import { FamilyMatrix } from './components/FamilyMatrix';
-import { ActionCards } from './components/ActionCards';
-import { GeminiConsultation } from './components/GeminiConsultation';
-import { FamilyModal } from './components/FamilyModal';
-import { Loader2, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Navbar } from './components/layout/Navbar';
+import { Footer } from './components/layout/Footer';
+import { AQIGaugeHero } from './components/dashboard/AQIGaugeHero';
+import { PollutantGrid } from './components/dashboard/PollutantGrid';
+import { HourlyForecastTimeline } from './components/dashboard/HourlyForecastTimeline';
+import { OptimalWindowCard } from './components/dashboard/OptimalWindowCard';
+import { IndoorProtocolCard } from './components/dashboard/IndoorProtocolCard';
+import { CohortRecommendationsGrid } from './components/dashboard/CohortRecommendationsGrid';
+import { SustainableLivingSection } from './components/sustainability/SustainableLivingSection';
+import { ProfileSelector } from './components/family/ProfileSelector';
+import { MemberHealthAdvisories } from './components/family/MemberHealthAdvisories';
+import { FamilyMemberModal } from './components/family/FamilyMemberModal';
+import { EnvironmentalAssistant } from './components/chat/EnvironmentalAssistant';
+import { useAQI } from './hooks/useAQI';
+import { useFamilyProfiles } from './hooks/useFamilyProfiles';
+import { AlertCircle, RefreshCw, WifiOff, Clock } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [cities, setCities] = useState<CityLocation[]>([]);
-  const [selectedCity, setSelectedCity] = useState<CityLocation>({
-    name: 'New Delhi, India',
-    latitude: 28.6139,
-    longitude: 77.2090,
-  });
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const [activeMemberId, setActiveMemberId] = useState<string | undefined>();
+  const {
+    family,
+    selectedMemberId,
+    setSelectedMemberId,
+    selectedMember,
+    resetDemo,
+    clearDemo,
+    addMember,
+    removeMember,
+  } = useFamilyProfiles();
 
-  const [currentAQI, setCurrentAQI] = useState<CurrentAQIResponse | null>(null);
-  const [forecastAQI, setForecastAQI] = useState<ForecastAQIResponse | null>(null);
-  const [recommendations, setRecommendations] = useState<RecommendationResponse | null>(null);
-
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isFamilyModalOpen, setIsFamilyModalOpen] = useState<boolean>(false);
-
-  // Initialize Cities & Family
-  useEffect(() => {
-    async function init() {
-      try {
-        const [citiesData, familyData] = await Promise.all([
-          fetchMajorCities().catch(() => [
-            { name: 'New Delhi, India', latitude: 28.6139, longitude: 77.2090 },
-            { name: 'London, United Kingdom', latitude: 51.5074, longitude: -0.1278 },
-            { name: 'New York, USA', latitude: 40.7128, longitude: -74.0060 },
-          ]),
-          fetchFamilyMembers().catch(() => ({ members: [], active_member_id: undefined })),
-        ]);
-
-        setCities(citiesData);
-        if (citiesData.length > 0) {
-          setSelectedCity(citiesData[0]);
-        }
-        setFamilyMembers(familyData.members);
-        setActiveMemberId(familyData.active_member_id);
-      } catch (err: any) {
-        console.error('Initialization error:', err);
-      }
-    }
-    init();
-  }, []);
-
-  // Fetch Atmospheric Data on City or Active Member Change
-  const loadAtmosphericData = async (refresh: boolean = false) => {
-    if (!selectedCity) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [curr, fc, recs] = await Promise.all([
-        fetchCurrentAQI(selectedCity.latitude, selectedCity.longitude, selectedCity.name, refresh),
-        fetchForecastAQI(selectedCity.latitude, selectedCity.longitude, selectedCity.name, refresh),
-        fetchRecommendations(selectedCity.latitude, selectedCity.longitude, selectedCity.name, activeMemberId),
-      ]);
-      setCurrentAQI(curr);
-      setForecastAQI(fc);
-      setRecommendations(recs);
-    } catch (err: any) {
-      console.error('Data fetching error:', err);
-      setError('Unable to reach atmospheric telemetry services. Retrying with local baseline.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAtmosphericData(false);
-  }, [selectedCity, activeMemberId]);
-
-  const handleSelectMember = async (id: string) => {
-    try {
-      const updated = await setActiveFamilyMember(id);
-      setActiveMemberId(updated.active_member_id);
-      setFamilyMembers(updated.members);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleAddMember = async (memberData: Omit<FamilyMember, 'id'>) => {
-    try {
-      const newMem = await createFamilyMember(memberData);
-      setFamilyMembers((prev) => [...prev, newMem]);
-      setActiveMemberId(newMem.id);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const activeMember = familyMembers.find((m) => m.id === activeMemberId);
+  const {
+    city,
+    standard,
+    setStandard,
+    forecastHours,
+    setForecastHours,
+    reading,
+    forecast,
+    recommendations,
+    loading,
+    error,
+    isStale,
+    isOffline,
+    refreshData,
+    selectLocation,
+  } = useAQI('New Delhi, India', family || undefined);
 
   return (
-    <div className="min-h-screen bg-navy-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-navy-950">
+    <div className="min-h-screen flex flex-col bg-[#070D1E] text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-200">
+      
+      {/* Top Navigation */}
       <Navbar
-        cities={cities}
-        selectedCity={selectedCity}
-        onSelectCity={setSelectedCity}
-        familyMembers={familyMembers}
-        activeMemberId={activeMemberId}
-        onSelectMember={handleSelectMember}
-        onOpenFamilyModal={() => setIsFamilyModalOpen(true)}
-        onRefresh={() => loadAtmosphericData(true)}
-        isLoading={isLoading}
-        providerName={currentAQI?.provider || 'Open-Meteo High-Res Atmosphere'}
+        currentCity={city}
+        onSelectCity={selectLocation}
+        onToggleChat={() => setIsChatOpen(!isChatOpen)}
+        isChatOpen={isChatOpen}
+        isLoading={loading}
+        isOffline={isOffline}
+        onRefresh={refreshData}
+        standard={standard}
+        onSelectStandard={setStandard}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {error && (
-          <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
-            <span>{error}</span>
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6">
+        
+        {/* Offline notification banner */}
+        {isOffline && (
+          <div className="mb-4 p-3.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-200 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <WifiOff className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Offline Mode: Working with locally cached atmospheric telemetry. Reconnecting automatically when internet returns.</span>
+            </div>
+            <button
+              onClick={refreshData}
+              className="flex items-center gap-1 px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 rounded-lg transition-colors font-medium"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Reconnect
+            </button>
           </div>
         )}
 
-        {isLoading && !currentAQI ? (
-          <div className="min-h-[500px] flex flex-col items-center justify-center gap-3 text-cyan-400">
-            <Loader2 className="w-8 h-8 animate-spin" />
-            <span className="text-sm font-semibold tracking-wide text-slate-300">
-              Gathering atmospheric sensor telemetry for {selectedCity.name}...
-            </span>
+        {/* Stale data notification banner */}
+        {isStale && !isOffline && (
+          <div className="mb-4 p-3 rounded-xl bg-slate-900/90 border border-cyan-500/30 text-cyan-200 flex items-center gap-2 text-xs">
+            <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span>Displaying cached atmospheric telemetry. Reconnecting to live sensor providers in background.</span>
           </div>
-        ) : (
-          <>
-            {/* Top Row: Current AQI Gauge & Trajectory Forecast */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              <div className="lg:col-span-7">
-                {currentAQI && <AQIGauge aqiData={currentAQI} />}
-              </div>
-              <div className="lg:col-span-5">
-                {forecastAQI && <ForecastChart forecast={forecastAQI} />}
-              </div>
+        )}
+
+        {/* Error notification banner */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-red-950/40 border border-red-500/40 text-red-200 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <span>{error}</span>
             </div>
+            <button
+              onClick={refreshData}
+              className="flex items-center gap-1 px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg transition-colors font-medium"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Retry
+            </button>
+          </div>
+        )}
 
-            {/* Pollutants Breakdown Grid */}
-            {currentAQI && <PollutantGrid pollutants={currentAQI.pollutants} />}
+        {/* Loading state */}
+        {loading && !reading && (
+          <div className="h-96 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-4">
+              <RefreshCw className="w-6 h-6 text-emerald-400 animate-spin" />
+            </div>
+            <h3 className="text-base font-bold text-white">Streaming Atmospheric Telemetry</h3>
+            <p className="text-xs text-slate-400 mt-1">Connecting to Open-Meteo &amp; synthesizing Indian CPCB / EPA environmental intelligence...</p>
+          </div>
+        )}
 
-            {/* Family Vulnerability Matrix */}
-            <FamilyMatrix
-              members={familyMembers}
-              activeMemberId={activeMemberId}
-              currentAqi={currentAQI?.aqi || 50}
-              onSelectMember={handleSelectMember}
-              onOpenModal={() => setIsFamilyModalOpen(true)}
+        {/* Active Environmental Intelligence Dashboard */}
+        {reading && (
+          <div className="space-y-6">
+            
+            {/* 1. Hero AQI Gauge Card with Multi-Standard Selector */}
+            <AQIGaugeHero
+              reading={reading}
+              recommendations={recommendations}
+              standard={standard}
+              onSelectStandard={setStandard}
             />
 
-            {/* Bottom Row: Action Directives & Gemini Health Consultant */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              <div className="lg:col-span-7">
-                {recommendations && <ActionCards recommendations={recommendations} />}
-              </div>
-              <div className="lg:col-span-5 sticky top-24">
-                <GeminiConsultation
-                  locationName={selectedCity.name}
-                  currentAqi={currentAQI?.aqi || 50}
-                  dominantPollutant={currentAQI?.dominant_pollutant || 'PM2.5'}
-                  activeMember={activeMember}
-                />
-              </div>
-            </div>
-          </>
+            {/* 2. Optimal Clean Air & Peak Windows */}
+            <OptimalWindowCard forecast={forecast} />
+
+            {/* 3. Atmospheric Pollutants Matrix */}
+            <PollutantGrid pollutants={reading.pollutants} />
+
+            {/* 4. 24-Hour & 48-Hour Forecast Curve */}
+            <HourlyForecastTimeline
+              forecast={forecast}
+              standard={standard}
+              forecastHours={forecastHours}
+              onSelectHours={setForecastHours}
+            />
+
+            {/* 5. Indoor Clean Haven Protocol */}
+            <IndoorProtocolCard protocol={recommendations?.indoor_protocol} />
+
+            {/* 6. Target Cohort Clinical Directives */}
+            <CohortRecommendationsGrid cohorts={recommendations?.cohort_recommendations} />
+
+            {/* 7. Sustainable Living & Green Commuting Calculator */}
+            <SustainableLivingSection currentAQI={reading.aqi_us} />
+
+            {/* 8. Family Profile Selector */}
+            <ProfileSelector
+              family={family}
+              selectedMemberId={selectedMemberId}
+              onSelectMember={setSelectedMemberId}
+              onOpenAddModal={() => setIsAddModalOpen(true)}
+              onResetDemo={resetDemo}
+              onClearDemo={clearDemo}
+              onRemoveMember={removeMember}
+            />
+
+            {/* 9. Clinical Member Advisories */}
+            <MemberHealthAdvisories
+              selectedMember={selectedMember}
+              recommendations={recommendations}
+            />
+
+          </div>
         )}
+
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-navy-800/80 bg-navy-950 py-8 text-center text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-left">
-            <div className="font-extrabold text-slate-200">BreatheWise AI · Challenge 6</div>
-            <div className="text-[11px] text-slate-400">
-              Live Urban Atmospheric Telemetry & Preventative Clinical Intelligence
-            </div>
-          </div>
-          <div className="text-right text-[11px] text-slate-400">
-            Powered by Google Gemini 2.5 Flash & Open-Meteo Air Quality Services
-          </div>
-        </div>
-      </footer>
-
-      {/* Add Family Member Modal */}
-      <FamilyModal
-        isOpen={isFamilyModalOpen}
-        onClose={() => setIsFamilyModalOpen(false)}
-        onAddMember={handleAddMember}
+      {/* Add Custom Family Member Modal */}
+      <FamilyMemberModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddMember={addMember}
       />
+
+      {/* Slide-Over Conversational AI Assistant */}
+      <EnvironmentalAssistant
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        currentAQI={reading}
+        currentFamily={family}
+      />
+
+      {/* Footer */}
+      <Footer />
+
     </div>
   );
 };
+
+export default App;

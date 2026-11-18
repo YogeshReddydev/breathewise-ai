@@ -1,0 +1,250 @@
+import React, { useState } from 'react';
+import { X, UserPlus, ShieldAlert, Heart, Activity } from 'lucide-react';
+import {
+  ActivityPreference,
+  FamilyMember,
+  HealthCondition,
+  TargetCohort,
+  VulnerabilityTier,
+} from '../../types/family';
+
+interface FamilyMemberModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAddMember: (member: FamilyMember) => void;
+}
+
+export const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
+  isOpen,
+  onClose,
+  onAddMember,
+}) => {
+  const [name, setName] = useState('');
+  const [relationship, setRelationship] = useState('Family Member');
+  const [age, setAge] = useState<number>(28);
+  const [conditions, setConditions] = useState<HealthCondition[]>([ 'none' ]);
+  const [activity, setActivity] = useState<ActivityPreference>('light_walking');
+  const [cohort, setCohort] = useState<TargetCohort>('general_household');
+  const [notes, setNotes] = useState('');
+
+  if (!isOpen) return null;
+
+  const toggleCondition = (cond: HealthCondition) => {
+    if (cond === 'none') {
+      setConditions(['none']);
+      return;
+    }
+    const filtered = conditions.filter((c) => c !== 'none');
+    if (filtered.includes(cond)) {
+      const updated = filtered.filter((c) => c !== cond);
+      setConditions(updated.length > 0 ? updated : ['none']);
+    } else {
+      setConditions([...filtered, cond]);
+    }
+  };
+
+  const calculateTier = (): VulnerabilityTier => {
+    if (
+      conditions.includes('asthma') ||
+      conditions.includes('cardiovascular') ||
+      conditions.includes('copd') ||
+      age < 10 ||
+      age >= 65
+    ) {
+      return 'high_risk';
+    }
+    if (
+      conditions.includes('allergies') ||
+      conditions.includes('pregnancy') ||
+      conditions.includes('outdoor_labor') ||
+      (age >= 10 && age < 18)
+    ) {
+      return 'sensitive';
+    }
+    return 'standard';
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    const newMember: FamilyMember = {
+      id: `custom_${Date.now()}`,
+      name: name.trim(),
+      relationship,
+      age: Number(age),
+      conditions,
+      activity_preference: activity,
+      vulnerability_tier: calculateTier(),
+      cohort,
+      notes: notes.trim() || undefined,
+      is_demo: false,
+    };
+
+    onAddMember(newMember);
+    onClose();
+  };
+
+  const availableConditions: { key: HealthCondition; label: string }[] = [
+    { key: 'none', label: 'None / Standard Respiratory' },
+    { key: 'asthma', label: 'Asthma / Reactive Airway' },
+    { key: 'allergies', label: 'Seasonal Pollen / Dust Allergies' },
+    { key: 'cardiovascular', label: 'Cardiovascular / Hypertension' },
+    { key: 'copd', label: 'COPD / Chronic Bronchitis' },
+    { key: 'pregnancy', label: 'Pregnancy' },
+    { key: 'outdoor_labor', label: 'Outdoor Labor / Prolonged Exposure' },
+    { key: 'student_commute', label: 'Student / Daily Commute' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#091124] border border-white/15 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+              <UserPlus className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Add Custom Household Member</h3>
+              <p className="text-xs text-slate-400">Configure voluntary vulnerability &amp; activity profile</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4 text-xs">
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Full / Preferred Name</label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Priya Sharma"
+                className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Relationship</label>
+              <input
+                type="text"
+                value={relationship}
+                onChange={(e) => setRelationship(e.target.value)}
+                placeholder="e.g. Daughter, Self, Father"
+                className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Age (Years)</label>
+              <input
+                type="number"
+                min={0}
+                max={120}
+                value={age}
+                onChange={(e) => setAge(Number(e.target.value))}
+                className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Household Target Cohort</label>
+              <select
+                value={cohort}
+                onChange={(e) => setCohort(e.target.value as TargetCohort)}
+                className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+              >
+                <option value="general_household">General Household</option>
+                <option value="children">Family with Children</option>
+                <option value="older_adults">Older Adult (65+)</option>
+                <option value="students">Student / Campus Commuter</option>
+                <option value="daily_commuters">Daily Commuter</option>
+                <option value="outdoor_workers">Outdoor Laborer / Worker</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">Primary Activity Preference</label>
+            <select
+              value={activity}
+              onChange={(e) => setActivity(e.target.value as ActivityPreference)}
+              className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500"
+            >
+              <option value="light_walking">Light Walking / Casual</option>
+              <option value="outdoor_running">Outdoor Running / Endurance Cardio</option>
+              <option value="cycling">Cycling / Active Commute</option>
+              <option value="public_transit">Public Transit Commute</option>
+              <option value="commuting">Motorized Roadway Commute</option>
+              <option value="outdoor_work">Outdoor Manual Labor</option>
+              <option value="indoor_only">Predominantly Indoor Only</option>
+            </select>
+          </div>
+
+          {/* Voluntary Vulnerability Badges */}
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1.5">
+              Voluntary Health Sensitivity Categories (Select all that apply)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {availableConditions.map((item) => {
+                const checked = conditions.includes(item.key);
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => toggleCondition(item.key)}
+                    className={`p-2.5 rounded-xl text-left border transition-all flex items-center justify-between ${
+                      checked
+                        ? 'bg-emerald-500/20 border-emerald-500/50 text-white font-medium'
+                        : 'bg-[#0D162B] border-white/5 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    {checked && <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 ml-1" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 font-semibold mb-1">Personal Notes (Optional)</label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. Uses inhaler before exercise; runs at 7 AM"
+              className="w-full bg-[#0D162B] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+
+          <div className="pt-3 border-t border-white/10 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl text-slate-400 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold hover:brightness-110 shadow-lg shadow-emerald-500/20 transition-all"
+            >
+              Save Member
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  );
+};

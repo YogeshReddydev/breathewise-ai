@@ -1,205 +1,261 @@
+import json
 import logging
-from typing import List, Optional, Dict, Any
-from app.config import settings
-from app.models.consultation import ChatMessage, ConsultationRequest, ConsultationResponse
-from app.models.family import FamilyMember
+from typing import Any, Dict, List, Optional
+from app.core.config import get_settings
+from app.models.aqi import AQIReading
+from app.models.family import FamilyGroup
+from app.models.recommendations import ComprehensiveRecommendation
 
 logger = logging.getLogger(__name__)
 
 
-class GeminiService:
-    """
-    Google Gemini Multimodal AI Service for BreatheWise AI.
-    Provides conversational environmental health consultations, personalized risk explanations,
-    and adaptive preventative guidance.
-    """
+SYSTEM_PROMPT = """You are BreatheWise AI, an expert environmental epidemiologist, pulmonary health specialist, and urban air quality advisor.
+Your mission is to translate multi-spectral atmospheric sensor telemetry into empathetic, actionable, personalized guidance for urban households.
 
-    SYSTEM_INSTRUCTION = """
-You are BreatheWise AI, the world's leading urban environmental health intelligence and air quality consultant.
-Your mission is to empower families, sensitive individuals, and urban citizens with preventative, clinically grounded, and actionable environmental guidance.
-
-CORE PRINCIPLES:
-1. Medical Disclaimer: Provide preventive environmental health guidance and protective strategies, but explicitly advise consulting healthcare professionals for diagnosis or acute treatment adjustments.
-2. Atmospheric Precision: Explain the biological impact of specific pollutants (PM2.5 deep alveolar penetration, PM10 upper respiratory irritation, NO2 bronchial hyperresponsiveness, O3 oxidative lung stress).
-3. Personalization: Dynamically adapt advice to the specific family member's age, preexisting conditions (asthma, COPD, cardiovascular vulnerability), and activity profile.
-4. Actionable Protocols: Always recommend tangible actions (HEPA fan speeds, air seal strategies, optimal transit times, certified N95/FFP2 respirator fit).
-5. Tone: Calm, authoritative, compassionate, and crystal clear. Avoid alarmism while treating hazardous levels with appropriate seriousness.
+STRICT GROUND-TRUTH & INTEGRITY CONSTRAINTS:
+1. NEVER invent fictional monitoring stations, imaginary sensor locations, or fabricated network IDs.
+2. NEVER hallucinate or alter any pollutant concentration or AQI figure. All cited measurements must match the verified telemetry provided in the context exactly.
+3. Clearly distinguish between measured ambient concentrations and estimated tailpipe/emissions factors.
+4. Support Indian CPCB NAQI, US EPA AQI, and European AQI explicitly. NEVER mix their breakpoints or treat them as identical.
+5. NEVER provide definitive clinical medical diagnoses or claim that any action guarantees health protection. Always frame guidance as environmental risk reduction.
 """
 
+
+class GeminiService:
+    """Enterprise Gemini API integration service with built-in resilient fallback."""
+
     def __init__(self):
-        self.api_key = settings.GEMINI_API_KEY
-        self.model_name = settings.GEMINI_MODEL
+        self.settings = get_settings()
+        self.api_key = self.settings.GEMINI_API_KEY
+        self.model_name = self.settings.GEMINI_MODEL or "gemini-2.5-flash"
         self._client = None
+        self._init_client()
 
-        if self.api_key:
-            try:
-                from google import genai
-                self._client = genai.Client(api_key=self.api_key)
-                logger.info("Google GenAI client initialized successfully.")
-            except Exception as e:
-                logger.warning(f"Failed to initialize Google GenAI client: {e}")
+    def _init_client(self):
+        if not self.api_key:
+            logger.info("GEMINI_API_KEY not configured. Running in expert rule-engine fallback mode.")
+            return
 
-    async def consult(
+        try:
+            from google import genai
+            self._client = genai.Client(api_key=self.api_key)
+            logger.info(f"Initialized Google GenAI Client with model: {self.model_name}")
+        except Exception as e:
+            logger.warning(f"Could not initialize google.genai: {e}. Fallback enabled.")
+            self._client = None
+
+    @property
+    def is_configured(self) -> bool:
+        return self._client is not None
+
+    async def enrich_recommendation(
         self,
-        request: ConsultationRequest,
-        member: Optional[FamilyMember] = None,
-    ) -> ConsultationResponse:
-        """
-        Conducts a multi-turn environmental consultation using Gemini, or provides an expert
-        deterministic response if no API key is supplied.
-        """
-        # Build contextual prompt preamble
-        context_lines = []
-        if request.location_name:
-            context_lines.append(f"Location: {request.location_name}")
-        if request.current_aqi is not None:
-            context_lines.append(f"Current AQI: {request.current_aqi}")
-        if request.dominant_pollutant:
-            context_lines.append(f"Dominant Pollutant: {request.dominant_pollutant}")
-        if member:
-            conditions_str = ", ".join([c.value for c in member.conditions]) or "None"
-            context_lines.append(
-                f"Subject: {member.name} (Age: {member.age}, Relationship: {member.relationship}, "
-                f"Sensitivity: {member.sensitivity.value}, Known Conditions: {conditions_str}, "
-                f"Primary Activity: {member.primary_activity})"
+        aqi_reading: AQIReading,
+        family: FamilyGroup,
+        base_rec: ComprehensiveRecommendation,
+    ) -> ComprehensiveRecommendation:
+        """Enrich rule-engine recommendations with Gemini 2.5 Flash contextual intelligence."""
+        if not self.is_configured:
+            return base_rec
+
+        cpcb_info = ""
+        if aqi_reading.cpcb and aqi_reading.cpcb.calculable and aqi_reading.cpcb.aqi is not None:
+            cpcb_info = f"Indian CPCB NAQI: {aqi_reading.cpcb.aqi} ({aqi_reading.cpcb.category})"
+
+        prompt = f"""Analyze the following real-time atmospheric measurements and family roster:
+Location: {aqi_reading.location_name}
+US EPA AQI: {aqi_reading.aqi_us} ({aqi_reading.category_label})
+{cpcb_info}
+European AQI: {aqi_reading.aqi_eu or 'N/A'}
+Dominant Pollutant: {aqi_reading.dominant_pollutant}
+Verified Concentrations:
+- PM2.5: {aqi_reading.pollutants.pm2_5:.1f} µg/m³
+- PM10: {aqi_reading.pollutants.pm10:.1f} µg/m³
+- O3: {aqi_reading.pollutants.o3 or 'N/A'} µg/m³
+- NO2: {aqi_reading.pollutants.no2 or 'N/A'} µg/m³
+Source: {aqi_reading.source_attribution}
+
+Household: {family.family_name} (Demo Profile: {family.is_demo})
+Members:
+{json.dumps([{ 'name': m.name, 'age': m.age, 'conditions': [c.value for c in m.conditions], 'activity': m.activity_preference.value, 'tier': m.vulnerability_tier.value, 'is_demo': m.is_demo } for m in family.members], indent=2)}
+
+Please provide:
+1. A concise, authoritative headline for today's briefing.
+2. A 2-sentence executive summary emphasizing specific risks for the vulnerable members.
+3. Indoor air quality protocol (windows open/closed, purifier level, key action).
+
+Respond strictly in valid JSON format with keys:
+"headline": string,
+"summary": string,
+"indoor_protocol_action": string,
+"indoor_purifier_setting": string
+"""
+
+        try:
+            response = self._client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config={
+                    "system_instruction": SYSTEM_PROMPT,
+                    "response_mime_type": "application/json",
+                },
             )
+            data = json.loads(response.text)
+            
+            # Enrich fields safely
+            base_rec.headline = data.get("headline", base_rec.headline)
+            base_rec.summary = data.get("summary", base_rec.summary)
+            if "indoor_protocol_action" in data:
+                base_rec.indoor_protocol.recommended_action = data["indoor_protocol_action"]
+            if "indoor_purifier_setting" in data:
+                base_rec.indoor_protocol.purifier_setting = data["indoor_purifier_setting"]
+            base_rec.engine_source = self.model_name
+            return base_rec
+        except Exception as e:
+            logger.warning(f"Gemini enrichment failed: {e}. Preserving expert-rule recommendation.")
+            return base_rec
 
-        context_prompt = "\n".join(context_lines)
-
-        # If live Gemini client is ready and configured
-        if self._client and self.api_key:
+    async def chat(
+        self,
+        message: str,
+        context_aqi: Optional[AQIReading] = None,
+        context_family: Optional[FamilyGroup] = None,
+        chat_history: Optional[List[Dict[str, str]]] = None,
+    ) -> Dict[str, Any]:
+        """Conversational assistance answering questions about air quality, family safety, transport, and mitigation."""
+        if self.is_configured:
             try:
-                contents = []
-                # Add historical messages
-                for msg in request.history[-settings.MAX_CONSULTATION_HISTORY:]:
-                    contents.append(f"{msg.role.upper()}: {msg.content}")
+                context_str = ""
+                if context_aqi:
+                    cpcb_str = f" | CPCB NAQI: {context_aqi.cpcb.aqi} ({context_aqi.cpcb.category})" if context_aqi.cpcb and context_aqi.cpcb.calculable else ""
+                    context_str += (
+                        f"\nVerified Atmospheric Telemetry:\n"
+                        f"- Location: {context_aqi.location_name}\n"
+                        f"- US EPA AQI: {context_aqi.aqi_us} ({context_aqi.category_label}){cpcb_str}\n"
+                        f"- Dominant Pollutant: {context_aqi.dominant_pollutant}\n"
+                        f"- Fine PM2.5: {context_aqi.pollutants.pm2_5:.1f} µg/m³ | Coarse PM10: {context_aqi.pollutants.pm10:.1f} µg/m³\n"
+                        f"- Data Provider: {context_aqi.source_attribution}\n"
+                    )
+                if context_family:
+                    members_desc = ", ".join([f"{m.name} ({m.age}y, conditions={','.join([c.value for c in m.conditions])}, cohort={m.cohort.value})" for m in context_family.members])
+                    context_str += f"- Household Roster: {context_family.family_name} with members: {members_desc}\n"
 
-                current_query = (
-                    f"[Current Context]\n{context_prompt}\n\n"
-                    f"User Query: {request.message}"
-                )
-                contents.append(f"USER: {current_query}")
-                full_prompt = "\n\n".join(contents)
-
+                full_prompt = f"{context_str}\nUser Question: {message}\nProvide scientifically grounded, practical guidance."
                 response = self._client.models.generate_content(
                     model=self.model_name,
                     contents=full_prompt,
-                    config={
-                        "system_instruction": self.SYSTEM_INSTRUCTION,
-                        "temperature": 0.4,
-                    },
+                    config={"system_instruction": SYSTEM_PROMPT},
                 )
-                reply_text = response.text or "I am currently unable to process your request."
-                return self._enrich_response(reply_text, request, member)
+                return {
+                    "reply": response.text,
+                    "model": self.model_name,
+                    "source": "gemini",
+                }
             except Exception as e:
-                logger.error(f"Gemini API call failed: {e}. Falling back to rule-based engine.")
+                logger.warning(f"Gemini chat failed ({e}), falling back to deterministic expert response.")
 
-        # Fallback intelligent consultation engine
-        return self._generate_expert_fallback_reply(request, member, context_prompt)
+        # Deterministic Expert Rule Engine Fallback
+        return self._generate_expert_chat_fallback(message, context_aqi, context_family)
 
-    def _enrich_response(
-        self, reply: str, request: ConsultationRequest, member: Optional[FamilyMember]
-    ) -> ConsultationResponse:
-        followups = self._generate_followups(request, member)
-        alerts = []
-        if request.current_aqi and request.current_aqi > 150:
-            alerts.append("Unhealthy AQI threshold breached (>150). Wear N95 respirator outdoors.")
-        if member and any(c.value in ["asthma", "copd"] for c in member.conditions):
-            alerts.append(f"Respiratory precaution active for {member.name}: Keep rescue inhaler on hand.")
+    def _generate_expert_chat_fallback(
+        self,
+        message: str,
+        aqi_reading: Optional[AQIReading],
+        family: Optional[FamilyGroup],
+    ) -> Dict[str, Any]:
+        msg_lower = message.lower()
+        aqi_val = aqi_reading.aqi_us if aqi_reading else 65
+        loc_name = aqi_reading.location_name if aqi_reading else "your area"
+        pm2_5_val = aqi_reading.pollutants.pm2_5 if aqi_reading else 18.0
 
-        return ConsultationResponse(
-            reply=reply,
-            suggested_followups=followups,
-            health_alerts=alerts,
-            ai_engine="Google Gemini 2.5 Flash",
-        )
-
-    def _generate_expert_fallback_reply(
-        self, request: ConsultationRequest, member: Optional[FamilyMember], context_prompt: str
-    ) -> ConsultationResponse:
-        aqi = request.current_aqi if request.current_aqi is not None else 85
-        name = member.name if member else "your family"
-        query_lower = request.message.lower()
-
-        # Context-aware rule-based clinical response
-        if "walk" in query_lower or "exercise" in query_lower or "run" in query_lower or "outdoor" in query_lower:
-            if aqi <= 50:
-                text = (
-                    f"Air quality in {request.location_name} is currently **Good (AQI {aqi})**. "
-                    f"Outdoor exercise and walks are completely safe for {name}. Enjoy your time outside!"
-                )
-            elif aqi <= 100:
-                text = (
-                    f"Current AQI is **Moderate ({aqi})** in {request.location_name}. "
-                    f"While healthy adults can safely exercise outside, {name} should observe how they feel. "
-                    f"If exercising outdoors, the early afternoon (1:00 PM - 4:00 PM) offers the lowest particulate concentration."
-                )
-            elif aqi <= 150:
-                text = (
-                    f"Air quality is **Unhealthy for Sensitive Groups (AQI {aqi})**. "
-                    f"Outdoor workouts or prolonged walks are **not advised** for {name}. "
-                    f"Switch to indoor treadmill or bodyweight exercises in a room with an active HEPA filter."
+        # 1. Sustainable transport / commuting queries
+        if any(w in msg_lower for w in ["transit", "commute", "metro", "bus", "carpool", "emission", "transport", "bike", "cycle"]):
+            if aqi_val <= 100:
+                reply = (
+                    f"Sustainable Mobility Guide for {loc_name} (AQI {aqi_val}):\n\n"
+                    f"1. Active Travel (Walking / Cycling): Safe and encouraged today. Produces 0 g CO2/km and avoids ~170 g CO2/km compared to solo petrol driving.\n"
+                    f"2. Mass Transit: Taking the city bus (~35 g CO2/p-km) or electric metro (~22 g CO2/p-km) cuts greenhouse emissions by 80-87%.\n"
+                    f"3. Environmental Benefit: Every 10 km shifted from a car to metro prevents ~1.5 kg of CO2 and eliminates 0.4 g of direct tailpipe PM2.5."
                 )
             else:
-                text = (
-                    f"**Urgent Alert**: AQI is currently **{aqi}** (Unhealthy/Hazardous). "
-                    f"All outdoor exercise must be suspended immediately for {name}. Deep respiration under these conditions "
-                    f"transports billions of PM2.5 particles deep into alveolar capillaries."
+                reply = (
+                    f"Commuting & Exposure Advisory for {loc_name} (AQI {aqi_val} - Elevated):\n\n"
+                    f"1. Air Quality Precaution: While cycling and walking are carbon-neutral, vigorous respiration in heavy traffic causes deep particulate deposition in lungs. Today, prefer electric rail / metro.\n"
+                    f"2. Public Transit: Metro cabins provide filtered air, shielding you from roadside diesel exhaust while keeping emissions low (22 g CO2/p-km).\n"
+                    f"3. If Driving: Switch your vehicle HVAC to 'Internal Recirculation' mode and consider carpooling to avoid adding unnecessary traffic emissions."
                 )
-        elif "window" in query_lower or "ventilat" in query_lower or "air" in query_lower:
-            if aqi <= 50:
-                text = (
-                    f"With AQI at {aqi}, you should open windows for cross-ventilation to flush out indoor carbon dioxide and VOCs."
-                )
-            elif aqi <= 100:
-                text = (
-                    f"AQI is Moderate ({aqi}). Keep windows mostly closed, but a brief 10-15 minute cross-ventilation "
-                    f"during the early afternoon is acceptable if indoor air feels stale."
-                )
+
+        # 2. Workout / running / exercise queries
+        elif any(w in msg_lower for w in ["run", "jog", "workout", "exercise", "marathon", "fitness", "gym"]):
+            if aqi_val <= 50:
+                reply = f"In {loc_name}, the AQI is currently {aqi_val} (Good). Outdoor workouts, marathon training, and recreational sports are unrestricted for all household members."
+            elif aqi_val <= 100:
+                reply = f"The AQI in {loc_name} is {aqi_val} (Moderate, PM2.5: {pm2_5_val:.1f} µg/m³). Outdoor running is acceptable for healthy individuals. Sensitive members should opt for shaded parks and schedule sessions before afternoon traffic builds."
             else:
-                text = (
-                    f"**Keep all exterior windows and doors tightly sealed.** Ambient AQI is {aqi}. "
-                    f"Turn your HEPA air purifier to medium or high speed, and ensure vehicle AC is set to internal recirculation."
+                reply = (
+                    f"The AQI in {loc_name} is {aqi_val} (Elevated). Aerobic running increases pulmonary ventilation rate 5-10 fold, drawing particles deep into alveoli. "
+                    f"We strongly recommend shifting workouts indoors: treadmill cardio, stationary cycling, or bodyweight circuit training in a room with active HEPA filtration."
                 )
-        elif "mask" in query_lower or "n95" in query_lower or "protect" in query_lower:
-            if aqi <= 100:
-                text = "Standard cloth or surgical masks offer little PM2.5 protection, but at current levels (AQI ≤ 100), masks are optional unless especially sensitive."
+
+        # 3. Mask recommendations
+        elif any(w in msg_lower for w in ["mask", "n95", "kn95", "face mask", "respirator", "ffp2"]):
+            if aqi_val <= 100:
+                reply = f"With an AQI of {aqi_val}, respirators are not universally required for healthy adults. However, family members with asthma or dust sensitivity benefit from a KN95 mask near busy construction or traffic corridors."
             else:
-                text = (
-                    f"At AQI {aqi}, a certified **N95 or FFP2 respirator** is strongly advised. "
-                    f"Make sure the mask forms a tight perimeter seal over the bridge of the nose and chin with no air leaks."
+                reply = (
+                    f"Because current AQI is {aqi_val} with fine PM2.5 at {pm2_5_val:.1f} µg/m³, standard cloth or surgical masks provide minimal protection against sub-micron particles. "
+                    f"We recommend a NIOSH-certified N95, KN95, or FFP2 respirator with an airtight facial seal for any outdoor exposure exceeding 15 minutes."
                 )
-        else:
-            text = (
-                f"Based on current atmospheric readings for {request.location_name} (AQI: {aqi}, dominant: {request.dominant_pollutant or 'PM2.5'}), "
-                f"here are key precautions for {name}:\n\n"
-                f"1. **Indoor Air Management**: Keep exterior doors closed and run HEPA filtration.\n"
-                f"2. **Commute Strategy**: Avoid open-air transportation during morning temperature inversions (8:00 AM - 10:30 AM).\n"
-                f"3. **Health Monitoring**: Check that any prescribed rescue inhalers or allergy antihistamines are within reach."
+
+        # 4. Windows & indoor ventilation
+        elif any(w in msg_lower for w in ["window", "windows", "ventilation", "fresh air", "air purifier", "hepa"]):
+            if aqi_val <= 50:
+                reply = f"The outdoor air in {loc_name} is crisp (AQI {aqi_val}). Yes, open your windows for 30-45 minutes to create cross-ventilation and purge indoor VOCs, CO2, and allergens."
+            else:
+                reply = (
+                    f"With outdoor AQI at {aqi_val} (PM2.5: {pm2_5_val:.1f} µg/m³), outdoor pollution exceeds WHO safe limits. Keep windows closed and sealed. "
+                    f"Run your indoor HEPA air purifier on medium or auto mode in bedrooms and living spaces, and avoid burning incense or frying food without an exhaust hood."
+                )
+
+        # 5. Cohort queries: children, students, asthma, seniors
+        elif any(w in msg_lower for w in ["asthma", "child", "children", "kid", "school", "recess", "student", "senior", "elderly"]):
+            reply = (
+                f"Vulnerable Cohort Advisory for {loc_name} (AQI {aqi_val}):\n\n"
+                f"- Children & Students: Due to developing airways and higher ventilation per kilogram, children absorb more particulate matter. Keep quick-relief inhalers accessible and shift playground games indoors if AQI exceeds 100.\n"
+                f"- Older Adults: Particulate exposure increases vascular resistance and blood pressure. Limit outdoor physical exertion and stay in air-filtered spaces.\n"
+                f"- Precaution: This guidance is preventive; please consult your pediatrician or physician for individualized clinical action plans."
             )
 
-        followups = self._generate_followups(request, member)
-        alerts = []
-        if aqi > 100:
-            alerts.append(f"Elevated pollution level ({aqi} AQI). Keep windows closed.")
+        # 6. CPCB vs US EPA comparison
+        elif any(w in msg_lower for w in ["cpcb", "epa", "standard", "breakpoint", "difference"]):
+            cpcb_status = f"{aqi_reading.cpcb.aqi} ({aqi_reading.cpcb.category})" if (aqi_reading and aqi_reading.cpcb and aqi_reading.cpcb.calculable) else "requires at least 3 monitored pollutants"
+            reply = (
+                f"AQI Standard Architecture Comparison in BreatheWise AI:\n\n"
+                f"1. Indian CPCB NAQI: Evaluates 8 pollutants (PM10, PM2.5, NO2, SO2, CO, O3, NH3, Pb). Breakpoints: 0-50 Good, 51-100 Satisfactory, 101-200 Moderate, 201-300 Poor, 301-400 Very Poor, 401-500 Severe. Requires at least 3 monitored pollutants with either PM10 or PM2.5. Current CPCB status: {cpcb_status}.\n"
+                f"2. US EPA AQI: Focuses on 5 criteria pollutants with standard 0-500 scale: 0-50 Good, 51-100 Moderate, 101-150 Unhealthy for Sensitive Groups, 151-200 Unhealthy, 201-300 Very Unhealthy, 301-500 Hazardous.\n"
+                f"3. European AQI: Evaluates 1-5 index based on CAQI/EAQI thresholds.\n\n"
+                f"BreatheWise never mixes or equates these scales—each is calculated and labeled independently."
+            )
 
-        return ConsultationResponse(
-            reply=text,
-            suggested_followups=followups,
-            health_alerts=alerts,
-            ai_engine="BreatheWise Expert AI Engine",
-        )
+        else:
+            cpcb_val = f" | CPCB: {aqi_reading.cpcb.aqi}" if (aqi_reading and aqi_reading.cpcb and aqi_reading.cpcb.calculable) else ""
+            reply = (
+                f"BreatheWise Environmental Summary for {loc_name}: Current US EPA AQI is {aqi_val}{cpcb_val} with primary pollutant {aqi_reading.dominant_pollutant if aqi_reading else 'PM2.5'} at {pm2_5_val:.1f} µg/m³. "
+                f"All telemetry is sourced live from Open-Meteo numerical atmospheric models. Check the 24h/48h forecast curve and tailored family recommendations before planning prolonged outdoor exposures."
+            )
 
-    def _generate_followups(
-        self, request: ConsultationRequest, member: Optional[FamilyMember]
-    ) -> List[str]:
-        name = member.name if member else "my family"
-        return [
-            f"What is the best time today for {name} to commute?",
-            f"Should I run my HEPA purifier on turbo tonight?",
-            f"What specific symptoms should I watch for in {name}?",
-            "How does today's wind speed affect particulate dispersion?",
-        ]
+        return {
+            "reply": reply,
+            "model": "breathewise-expert-rules",
+            "source": "expert_rules_engine",
+        }
 
 
-gemini_service = GeminiService()
+_gemini_service_instance: Optional[GeminiService] = None
+
+
+def get_gemini_service() -> GeminiService:
+    global _gemini_service_instance
+    if _gemini_service_instance is None:
+        _gemini_service_instance = GeminiService()
+    return _gemini_service_instance

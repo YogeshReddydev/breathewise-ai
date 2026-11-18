@@ -1,128 +1,176 @@
+import { AQIReading, AQIStandard, AirQualityForecast, LocationSearchResult } from '../types/aqi';
+import { FamilyGroup, FamilyMember } from '../types/family';
+import { ComprehensiveRecommendation } from '../types/recommendations';
 import {
-  CurrentAQIResponse,
-  ForecastAQIResponse,
-  CityLocation,
-  RecommendationResponse,
-  FamilyMemberListResponse,
-  FamilyMember,
-  ConsultationResponse,
-  ChatMessage,
-} from '../types';
+  EmissionsCalculationRequest,
+  EmissionsCalculationResult,
+  SustainableTransportOption,
+} from '../types/sustainability';
 
-const API_BASE = '/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-async function handleResponse<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const errorBody = await res.text();
-    throw new Error(`API error ${res.status}: ${errorBody}`);
-  }
-  return res.json();
-}
-
-export async function fetchMajorCities(): Promise<CityLocation[]> {
-  const res = await fetch(`${API_BASE}/aqi/cities`);
-  return handleResponse<CityLocation[]>(res);
+export async function fetchHealth(): Promise<{ status: string; gemini_active: boolean; default_provider: string }> {
+  const resp = await fetch(`${API_BASE_URL}/health`);
+  if (!resp.ok) throw new Error('Backend health check failed');
+  return resp.json();
 }
 
 export async function fetchCurrentAQI(
-  lat: number,
-  lon: number,
-  locationName: string,
-  refresh: boolean = false
-): Promise<CurrentAQIResponse> {
-  const params = new URLSearchParams({
-    latitude: lat.toString(),
-    longitude: lon.toString(),
-    location_name: locationName,
-    refresh: refresh.toString(),
-  });
-  const res = await fetch(`${API_BASE}/aqi/current?${params}`);
-  return handleResponse<CurrentAQIResponse>(res);
-}
-
-export async function fetchForecastAQI(
-  lat: number,
-  lon: number,
-  locationName: string,
-  refresh: boolean = false
-): Promise<ForecastAQIResponse> {
-  const params = new URLSearchParams({
-    latitude: lat.toString(),
-    longitude: lon.toString(),
-    location_name: locationName,
-    refresh: refresh.toString(),
-  });
-  const res = await fetch(`${API_BASE}/aqi/forecast?${params}`);
-  return handleResponse<ForecastAQIResponse>(res);
-}
-
-export async function fetchRecommendations(
-  lat: number,
-  lon: number,
-  locationName: string,
-  memberId?: string
-): Promise<RecommendationResponse> {
-  const params = new URLSearchParams({
-    latitude: lat.toString(),
-    longitude: lon.toString(),
-    location_name: locationName,
-  });
-  if (memberId) {
-    params.append('member_id', memberId);
+  city?: string,
+  lat?: number,
+  lon?: number,
+  standard?: AQIStandard
+): Promise<AQIReading> {
+  const params = new URLSearchParams();
+  if (city) params.set('city', city);
+  if (lat !== undefined && lon !== undefined) {
+    params.set('lat', lat.toString());
+    params.set('lon', lon.toString());
   }
-  const res = await fetch(`${API_BASE}/recommendations?${params}`);
-  return handleResponse<RecommendationResponse>(res);
+  if (standard) {
+    params.set('standard', standard);
+  }
+
+  const resp = await fetch(`${API_BASE_URL}/aqi/current?${params.toString()}`);
+  if (!resp.ok) {
+    const errorData = await resp.json().catch(() => ({ detail: 'Failed to fetch AQI' }));
+    throw new Error(errorData.detail || 'Failed to fetch AQI reading');
+  }
+  return resp.json();
 }
 
-export async function fetchFamilyMembers(): Promise<FamilyMemberListResponse> {
-  const res = await fetch(`${API_BASE}/family`);
-  return handleResponse<FamilyMemberListResponse>(res);
+export async function fetchForecast(
+  city?: string,
+  lat?: number,
+  lon?: number,
+  hours: number = 24
+): Promise<AirQualityForecast> {
+  const params = new URLSearchParams();
+  if (city) params.set('city', city);
+  if (lat !== undefined && lon !== undefined) {
+    params.set('lat', lat.toString());
+    params.set('lon', lon.toString());
+  }
+  params.set('hours', hours.toString());
+
+  const resp = await fetch(`${API_BASE_URL}/aqi/forecast?${params.toString()}`);
+  if (!resp.ok) throw new Error('Failed to fetch forecast');
+  return resp.json();
 }
 
-export async function setActiveFamilyMember(memberId: string): Promise<FamilyMemberListResponse> {
-  const res = await fetch(`${API_BASE}/family/active/${memberId}`, {
-    method: 'POST',
-  });
-  return handleResponse<FamilyMemberListResponse>(res);
+export async function searchLocations(query: string): Promise<LocationSearchResult[]> {
+  if (!query || query.trim().length < 2) return [];
+  const resp = await fetch(`${API_BASE_URL}/aqi/locations/search?q=${encodeURIComponent(query.trim())}`);
+  if (!resp.ok) return [];
+  return resp.json();
 }
 
-export async function createFamilyMember(payload: Omit<FamilyMember, 'id'>): Promise<FamilyMember> {
-  const res = await fetch(`${API_BASE}/family`, {
+export async function fetchDefaultProfile(): Promise<FamilyGroup> {
+  const resp = await fetch(`${API_BASE_URL}/profiles/default`);
+  if (!resp.ok) throw new Error('Failed to fetch default family profile');
+  return resp.json();
+}
+
+export async function fetchActiveProfile(): Promise<FamilyGroup> {
+  const resp = await fetch(`${API_BASE_URL}/profiles/current`);
+  if (!resp.ok) return fetchDefaultProfile();
+  return resp.json();
+}
+
+export async function resetDemoProfile(): Promise<FamilyGroup> {
+  const resp = await fetch(`${API_BASE_URL}/profiles/reset-demo`, { method: 'POST' });
+  if (!resp.ok) throw new Error('Failed to reset demo profiles');
+  return resp.json();
+}
+
+export async function clearDemoProfile(): Promise<FamilyGroup> {
+  const resp = await fetch(`${API_BASE_URL}/profiles/clear-demo`, { method: 'POST' });
+  if (!resp.ok) throw new Error('Failed to clear demo profiles');
+  return resp.json();
+}
+
+export async function addFamilyMember(member: FamilyMember): Promise<FamilyGroup> {
+  const resp = await fetch(`${API_BASE_URL}/profiles/members/add`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(member),
   });
-  return handleResponse<FamilyMember>(res);
+  if (!resp.ok) throw new Error('Failed to add family member');
+  return resp.json();
 }
 
-export async function deleteFamilyMember(memberId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/family/${memberId}`, {
+export async function removeFamilyMember(memberId: string): Promise<FamilyGroup> {
+  const resp = await fetch(`${API_BASE_URL}/profiles/members/${encodeURIComponent(memberId)}`, {
     method: 'DELETE',
   });
-  if (!res.ok) {
-    throw new Error(`Failed to delete family member: ${res.statusText}`);
-  }
+  if (!resp.ok) throw new Error('Failed to delete member');
+  return resp.json();
 }
 
-export async function consultGeminiAI(
+export async function fetchComprehensiveRecommendations(
+  city?: string,
+  lat?: number,
+  lon?: number,
+  family?: FamilyGroup,
+  standard?: AQIStandard
+): Promise<ComprehensiveRecommendation> {
+  if (family) {
+    const resp = await fetch(`${API_BASE_URL}/recommendations/evaluate-custom`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ city, lat, lon, family, standard }),
+    });
+    if (!resp.ok) throw new Error('Failed to evaluate custom profile');
+    return resp.json();
+  }
+
+  const params = new URLSearchParams();
+  if (city) params.set('city', city);
+  if (lat !== undefined && lon !== undefined) {
+    params.set('lat', lat.toString());
+    params.set('lon', lon.toString());
+  }
+  if (standard) {
+    params.set('standard', standard);
+  }
+  const resp = await fetch(`${API_BASE_URL}/recommendations/comprehensive?${params.toString()}`);
+  if (!resp.ok) throw new Error('Failed to fetch recommendations');
+  return resp.json();
+}
+
+export async function calculateEmissions(
+  request: EmissionsCalculationRequest,
+  aqi: number = 50
+): Promise<EmissionsCalculationResult> {
+  const resp = await fetch(`${API_BASE_URL}/sustainability/calculate?aqi=${aqi}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!resp.ok) throw new Error('Failed to calculate transport emissions');
+  return resp.json();
+}
+
+export async function fetchSustainableTransportOptions(aqi: number = 50): Promise<SustainableTransportOption[]> {
+  const resp = await fetch(`${API_BASE_URL}/sustainability/options?aqi=${aqi}`);
+  if (!resp.ok) throw new Error('Failed to fetch transport options');
+  return resp.json();
+}
+
+export async function sendChatMessage(
   message: string,
-  history: ChatMessage[],
-  locationName: string,
-  currentAqi?: number,
-  dominantPollutant?: string,
-  memberId?: string
-): Promise<ConsultationResponse> {
-  const res = await fetch(`${API_BASE}/consult`, {
+  contextAqi?: AQIReading | null,
+  contextFamily?: FamilyGroup | null
+): Promise<{ reply: string; model: string; source: string }> {
+  const resp = await fetch(`${API_BASE_URL}/chat/message`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       message,
-      history,
-      location_name: locationName,
-      current_aqi: currentAqi,
-      dominant_pollutant: dominantPollutant,
-      member_id: memberId,
+      context_aqi: contextAqi,
+      context_family: contextFamily,
     }),
   });
-  return handleResponse<ConsultationResponse>(res);
+  if (!resp.ok) throw new Error('Failed to communicate with BreatheWise assistant');
+  return resp.json();
 }

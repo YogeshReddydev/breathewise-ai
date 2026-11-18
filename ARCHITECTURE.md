@@ -104,3 +104,4 @@ graph TD
 - Custom SVG radial AQI gauge with animated progress arc and pollutant indicator.
 - 24-hour diurnal trajectory chart highlighting smog peak hours and cleanest ventilation windows.
 - Family Vulnerability Matrix allowing seamless 1-click persona switching.
+

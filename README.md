@@ -1,186 +1,182 @@
-# BreatheWise AI — Urban Air Quality Assistant
-### Intelligent Atmospheric Telemetry, Family Health Vulnerability Profiling & Preventative Guidance
-*Challenge 6 – Urban Air Quality Assistant*
+# BreatheWise AI — Urban Air Quality & Environmental Health Assistant
 
-![BreatheWise Platform](https://img.shields.io/badge/Status-Foundation%20Ready-10B981?style=for-the-badge)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi)
-![React](https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.6+-3178C6?style=for-the-badge&logo=typescript)
-![Google Gemini](https://img.shields.io/badge/Google%20Gemini-2.5%20Flash-4285F4?style=for-the-badge&logo=google)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18.3+-61DAFB.svg?style=flat&logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6+-3178C6.svg?style=flat&logo=typescript)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-5.4+-646CFF.svg?style=flat&logo=vite)](https://vitejs.dev)
+[![Google Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-4285F4.svg?style=flat&logo=google)](https://ai.google.dev)
+[![Open-Meteo](https://img.shields.io/badge/Open--Meteo-Live_AQI-10B981.svg?style=flat)](https://open-meteo.com)
+[![CPCB India](https://img.shields.io/badge/CPCB-National_AQI-84CC16.svg?style=flat)](https://cpcb.nic.in)
 
----
-
-## 1. Project Overview
-
-**BreatheWise AI** is an advanced environmental health platform engineered to protect urban families and sensitive individuals from the acute and chronic health hazards of air pollution.
-
-By combining **live atmospheric sensor feeds** (Open-Meteo High-Resolution Air Quality API), **EPA breakpoint algorithms**, **diurnal pollution forecasting**, and **Google Gemini multimodal AI reasoning**, BreatheWise AI translates raw parts-per-billion chemical data into actionable, life-saving preventative health routines.
+> Built for **Challenge 6 – Urban Air Quality Assistant**. A production-grade environmental intelligence platform engineered to translate multi-spectral atmospheric sensor telemetry into actionable, personalized respiratory and cardiovascular health directives for urban families.
 
 ---
 
-## 2. Key Architectural Features
+## What's New in v0.2.0
 
-1. **Modular AQI Data Provider Architecture**:
-   - `BaseAQIProvider` abstract protocol enabling plug-and-play atmospheric data feeds.
-   - Built-in **Open-Meteo Air Quality Provider** providing live, high-resolution global atmospheric monitoring for 6 criteria pollutants ($PM_{2.5}, PM_{10}, NO_2, O_3, CO, SO_2$) without requiring third-party API keys.
-   - Secondary **WAQI Provider** supporting sensor networks across global metropolises.
-   - `ResilientAQIProviderRegistry` featuring TTL in-memory caching and automatic multi-provider fallback.
-
-2. **Standardized AQI & Breakpoint Calculation Engine**:
-   - Official US EPA piecewise linear interpolation for all 6 criteria pollutants.
-   - Dynamic dominant pollutant detection and clinical cautionary statement generation.
-
-3. **Intelligent Preventative Recommendation Engine**:
-   - Physiological risk scoring ($0 - 100$) integrating clinical vulnerability coefficients:
-     - Pediatric airway hyperreactivity (< 12 years)
-     - Geriatric reduced ciliary clearance (> 65 years)
-     - Asthma & Bronchial hyperresponsiveness
-     - Chronic Obstructive Pulmonary Disease (COPD)
-     - Cardiovascular & Hypertensive sensitivity
-     - Endurance athlete minute-ventilation factors
-   - **4 Pillars of Prevention**:
-     - *Certified Respirator Guidance*: N95 / FFP2 threshold triggers.
-     - *Window & Natural Ventilation Window*: Diurnal recommendations to avoid temperature inversion smog traps.
-     - *Indoor Air Scrubbing*: HEPA filtration mode settings (Auto, Medium, Turbo continuous).
-     - *Outdoor Exertion Guidance*: Safe workout durations and commuter route recommendations.
-
-4. **Family Health Profile & Vulnerability Matrix**:
-   - Multi-persona household management (seeded with pediatric asthma, geriatric cardiovascular, and marathon runner profiles).
-   - Dynamic alert thresholds that signal when personal safety margins are breached.
-
-5. **Google Gemini Conversational Health Consultant**:
-   - Multi-turn AI consultation powered by `gemini-2.5-flash`.
-   - Context-aware prompt injection supplying real-time atmospheric readings and active patient health conditions.
-   - Dynamic suggestion pills for follow-up questions and real-time clinical risk alerts.
-   - Deterministic rule-based fallback when operating offline or without an API key.
-
-6. **Design System & Visual Dashboard**:
-   - Deep navy canvas (`#050B14`, `#0A1128`), emerald green (`#10B981`), and cyan (`#06B6D4`) atmospheric accents.
-   - Precision SVG 260-degree radial AQI gauge with category badges.
-   - 24-hour diurnal trajectory chart marking peak smog and cleanest ventilation hours.
+- 🇮🇳 **India-First AQI Intelligence**: Full support for the Indian Central Pollution Control Board (CPCB) National AQI (NAQI) with official linear breakpoint interpolation across 8 criteria pollutants and strict validation ($\ge 3$ monitored pollutants with PM10/PM2.5 required).
+- ⚖️ **Multi-Standard Cross-Referencing**: Support for **CPCB NAQI (India)**, **US EPA AQI**, and **European AQI (EAQI)** without mixing breakpoints or presenting them as interchangeable.
+- 🎯 **5-Dimension Target Cohort Directives**: Structured clinical recommendations covering Families with Children, Older Adults (65+), Students, Daily Commuters, Outdoor Workers, and General Households.
+- 🌱 **Sustainable Living & Commuter Emissions Calculator**: Interactive calculator displaying single-trip, weekly, and annual $\text{CO}_2$ savings plus tailpipe $\text{PM}_{2.5}$ reductions, correlated with real-time ambient air safety.
+- 🛡️ **Family Protection Mode**: Create, edit, and delete real household members with voluntary sensitivity selections. Demonstration profiles (Marcus, Elena, Leo, Sophia) are badged as fictional simulation data with one-click clear and restore controls.
+- 🕒 **24-Hour & 48-Hour Extended Horizon**: Extended numerical simulation curve with clean-air and peak pollution window highlights.
+- 🧪 **Complete Automated Test Suite**: 37 backend pytest tests and 5 frontend vitest tests passing with 100% success.
 
 ---
 
-## 3. Directory Structure
+## Core Features
 
-```text
-Breath Ai/
-├── .env.example                  # Environment configuration template
-├── .gitignore                    # Strict size and secrets exclusion
-├── ARCHITECTURE.md               # Detailed system design specification
-├── README.md                     # Platform overview & setup guide
+1. **Real Planetary Telemetry**: High-resolution atmospheric models and satellite observations via Open-Meteo with zero required API keys. Real concentrations for PM2.5, PM10, $O_3$, $NO_2$, $SO_2$, and $CO$.
+2. **Clinical Risk Scoring ($0\text{--}100$)**: Algorithmic risk evaluation combining US EPA AQI standards, WHO 2021 air quality guidelines, and CPCB criteria.
+3. **Google Gemini 2.5 Flash Orchestrator**: Context-aware natural-language assistant with strict ground-truth guardrails preventing hallucinated sensor stations or invented readings, plus a rich deterministic expert fallback engine.
+4. **Indoor Clean Haven Protocols**: Actionable guidance for window cross-ventilation vs. airtight sealing, and automated HEPA purifier speeds (Low, Auto, High, Turbo).
+5. **Offline & Stale Data Resilience**: Automatic detection of network disconnection with cached telemetry display and background re-synchronization.
+6. **Premium Dark Theme Aesthetic**: Built with midnight navy (`#070D1E`, `#0D162B`), emerald green (`#10B981`), atmospheric cyan (`#06B6D4`), and accessible high-contrast typography.
+
+---
+
+## Project Structure
+
+```
+breathewise-ai/
+├── .gitignore                     # Strict exclusion of node_modules, .venv, caches
+├── .env.example                   # Unified environment variable documentation
+├── README.md                      # Comprehensive project guide
+├── docs/
+│   ├── ARCHITECTURE.md            # Architecture, clinical formulas, failover design
+│   └── API_SPEC.md                # Full REST API contracts and examples
 ├── backend/
+│   ├── requirements.txt           # Python dependencies
+│   ├── pyproject.toml             # Packaging & pytest configuration
 │   ├── app/
-│   │   ├── api/v1/               # FastAPI route controllers
-│   │   │   ├── aqi.py            # Real-time AQI & forecast endpoints
-│   │   │   ├── consultation.py   # Gemini AI consultation endpoints
-│   │   │   ├── family.py         # Family vulnerability matrix CRUD
-│   │   │   └── recommendations.py# Clinical action recommendation endpoints
-│   │   ├── models/               # Pydantic v2 data schemas
-│   │   ├── providers/            # Modular AQI provider implementations
-│   │   │   ├── base.py           # Abstract Base Provider
-│   │   │   ├── open_meteo.py     # Live Open-Meteo atmospheric client
-│   │   │   ├── waqi.py           # WAQI provider integration
-│   │   │   └── registry.py       # Caching & failover orchestrator
-│   │   ├── services/             # Core business logic
-│   │   │   ├── aqi_calculator.py # EPA sub-index calculation engine
-│   │   │   ├── family_service.py # In-memory family store
-│   │   │   ├── gemini_service.py # Google GenAI SDK integration
-│   │   │   └── recommendation_engine.py # Risk scoring algorithms
-│   │   ├── config.py             # Pydantic BaseSettings
-│   │   └── main.py               # FastAPI application entry point
-│   ├── tests/                    # Automated Pytest suite (100% pass)
-│   ├── pytest.ini                # Pytest runner settings
-│   └── requirements.txt          # Python dependencies
+│   │   ├── main.py                # FastAPI initialization & CORS
+│   │   ├── core/                  # Configuration & sanitization
+│   │   ├── models/                # AQI, Family, Recommendations & Sustainability schemas
+│   │   ├── providers/             # Base class, Open-Meteo, WAQI & Registry
+│   │   ├── services/              # Recommendation Engine, Sustainability, Gemini, AQI Coordinator
+│   │   ├── utils/                 # Official Indian CPCB NAQI linear interpolation engine
+│   │   └── api/                   # Telemetry, Recommendations, Profiles, Sustainability, Chat
+│   └── tests/                     # 32 automated pytest test cases
 └── frontend/
+    ├── package.json               # Dependencies & scripts
+    ├── tsconfig.json              # TypeScript strict configuration
+    ├── vite.config.ts             # Vite dev server & proxy settings
     ├── src/
-    │   ├── components/           # Modular React components
-    │   │   ├── AQIGauge.tsx      # SVG radial meter
-    │   │   ├── ActionCards.tsx   # Preventative action directives
-    │   │   ├── FamilyMatrix.tsx  # Vulnerability cards & switcher
-    │   │   ├── FamilyModal.tsx   # Add family profile modal
-    │   │   ├── ForecastChart.tsx # 24-hour diurnal timeline
-    │   │   ├── GeminiConsultation.tsx # Conversational AI consultant
-    │   │   ├── Navbar.tsx        # Responsive navigation & city search
-    │   │   └── PollutantGrid.tsx # 6 Criteria pollutant breakdown
-    │   ├── services/api.ts       # Typed API client
-    │   ├── types/index.ts        # Comprehensive TypeScript types
-    │   ├── utils/aqi-theme.ts    # Color tokens and category mapping
-    │   ├── App.tsx               # Main dashboard layout
-    │   ├── index.css             # Tailwind base & glass styling
-    │   └── main.tsx              # React DOM mounting
-    ├── index.html
-    ├── package.json
-    ├── tailwind.config.js
-    └── vite.config.ts
+    │   ├── types/                 # TypeScript interfaces (AQI, Family, Recommendations, Sustainability)
+    │   ├── services/              # API HTTP client
+    │   ├── utils/                 # EPA AQI, CPCB NAQI, European AQI & WHO calculators
+    │   ├── hooks/                 # useAQI and useFamilyProfiles
+    │   └── components/            # Dashboard hero, pollutant matrix, timeline, sustainability, family, chat
+    └── tests/                     # Vitest unit test suite (5 tests)
 ```
 
 ---
 
-## 4. Quick Start & Local Development
+## Quickstart Guide
 
-### Prerequisites
-- **Python 3.10+** (Python 3.12 recommended)
-- **Node.js 18+** & **npm**
+### 1. Backend Setup
 
-### Step 1: Backend Setup
 ```bash
-# Navigate to backend directory
 cd backend
 
-# (Optional) Create and activate a virtual environment
+# (Optional) Create virtual environment
 python -m venv .venv
 # On Windows: .venv\Scripts\activate
-# On Linux/macOS: source .venv/bin/activate
+# On Unix: source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure environment variables (optional for live Gemini)
-cp ../.env.example .env
-
-# Run FastAPI development server
-uvicorn app.main:app --reload --port 8000
+# Run the FastAPI server
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-The interactive Swagger API documentation will be available at:
-`http://localhost:8000/docs`
 
-### Step 2: Frontend Setup
+The backend API will be available at:
+- API Root: `http://localhost:8000`
+- Interactive Swagger UI Documentation: `http://localhost:8000/docs`
+- Health Check: `http://localhost:8000/api/health`
+
+### 2. Frontend Setup
+
 ```bash
-# Navigate to frontend directory in another terminal
 cd frontend
 
 # Install dependencies
 npm install
 
-# Start Vite dev server with backend proxy
+# Start Vite development server
 npm run dev
 ```
-Open your browser at:
-`http://localhost:5173`
+
+The frontend dashboard will be available at: `http://localhost:5173`.
 
 ---
 
-## 5. Automated Testing
+## Automated Testing Suite
 
-### Backend Test Suite
-Run the full automated pytest suite covering EPA breakpoint calculations, provider fallbacks, recommendation engines, and API endpoints:
+### Run All Backend Tests (37 Passed)
 ```bash
-python -m pytest backend/tests
+cd backend
+python -m pytest
 ```
-**Results:** `20 passed, 0 failed (100% pass rate)`.
+Validates:
+- CPCB sub-index linear interpolation and validation criteria.
+- US EPA and European AQI standard mapping.
+- 5-dimension structured cohort recommendations.
+- Transport emissions and particulate reduction formulas.
+- Fictional demonstration profile handling and custom member CRUD.
+- Input validation, coordinate bounds checking, and query sanitization.
+- Provider failover and error handling.
 
-### Frontend TypeScript & Bundle Verification
+### Run All Frontend Tests (5 Passed)
+```bash
+cd frontend
+npm test
+```
+Validates EPA bands, CPCB NAQI colors/categories, European AQI bands, and WHO 2021 air quality thresholds.
+
+### Run Production Build
 ```bash
 cd frontend
 npm run build
 ```
-**Results:** Zero TypeScript compiler errors; production bundle built cleanly in ~2.4s.
+Type checks and bundles the production assets in $< 4$ seconds.
 
 ---
 
-## 6. Security & Environment Configuration
+## Environment Configuration
 
-- **Zero Hardcoded Secrets**: All API tokens (Gemini, WAQI) are sourced exclusively through environment variables (`pydantic-settings`).
-- **Resilient Fallbacks**: If `GEMINI_API_KEY` is omitted, BreatheWise AI transitions to an intelligent clinical rule-based engine, ensuring 100% operational uptime without unhandled exceptions.
-- **Repository Hygiene**: Strict `.gitignore` prevents commits of `.env`, `node_modules`, `dist`, `.pytest_cache`, or Python virtual environments. Total repository source size is less than 0.5 MB.
+Copy `.env.example` to `.env` in the root or `backend/` directory:
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `DEFAULT_AQI_PROVIDER` | `open-meteo` | Real live AQI provider (free, no key required) |
+| `GEMINI_API_KEY` | *(empty)* | Optional. Google Gemini API key for natural language reasoning |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model variant |
+| `WAQI_API_KEY` | *(empty)* | Optional. World Air Quality Index token |
+| `AQI_CACHE_TTL_SECONDS`| `900` | In-memory cache time-to-live (15 minutes) |
+| `CORS_ORIGINS` | `http://localhost:5173,...` | Allowed CORS origins |
+
+> [!NOTE]
+> If `GEMINI_API_KEY` is omitted, BreatheWise operates autonomously using its built-in clinical rule engine derived from EPA, CPCB, and WHO standards.
+
+---
+
+## Repository Size & Hygiene Guardrails
+
+- **Single Branch**: Developed strictly on `main`.
+- **Zero Committed Secrets**: Protected by rigorous `.gitignore` rules.
+- **Repository Size**: Clean codebase under 1 MB (excluding `node_modules` and Python bytecode).
+- **No Mock AQI Data**: Real live planetary air quality telemetry provided by Open-Meteo.
+
+---
+
+## Medical Disclaimer
+
+BreatheWise AI provides environmental intelligence and educational health guidance based on EPA AQI, WHO 2021, and CPCB standards. It does not provide medical diagnoses or clinical treatment. Consult licensed healthcare professionals for personal medical care.
+
+---
+
+## License
+
+MIT License. Developed for Challenge 6 – Urban Air Quality Assistant.

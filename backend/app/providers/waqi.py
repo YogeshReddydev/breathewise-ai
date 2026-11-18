@@ -1,135 +1,138 @@
+import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import List, Optional
 import httpx
-from app.providers.base import BaseAQIProvider
+
 from app.models.aqi import (
-    CurrentAQIResponse,
-    ForecastAQIResponse,
-    PollutantsBreakdown,
-    AtmosphericConditions,
-    HourlyAQIPoint,
-    AQICategory,
+    AQIReading,
+    AQIStandard,
+    AirQualityForecast,
+    LocationSearchResult,
+    PollutantBreakdown,
+    USEPAReading,
+    get_category_color,
+    get_category_from_aqi,
+    get_category_label,
 )
-from app.services.aqi_calculator import AQICalculator
+from app.providers.base import BaseAQIProvider
+from app.utils.cpcb_calculator import calculate_cpcb_aqi
+
+logger = logging.getLogger(__name__)
 
 
 class WAQIAQIProvider(BaseAQIProvider):
-    """
-    World Air Quality Index (WAQI) integration.
-    Supports official WAQI token integration; falls back gracefully when unconfigured.
-    """
+    """World Air Quality Index (WAQI / aqicn.org) modular provider."""
 
-    BASE_URL = "https://api.waqi.info/feed"
+    BASE_URL = "https://api.waqi.info"
 
-    def __init__(self, api_token: Optional[str] = None):
-        self.api_token = api_token or ""
+    def __init__(self, api_key: str, timeout: float = 10.0):
+        self.api_key = api_key
+        self.timeout = timeout
 
     @property
     def name(self) -> str:
-        return "WAQI Global Sensor Network"
-
-    async def health_check(self) -> bool:
-        if not self.api_token:
-            return False
-        try:
-            async with httpx.AsyncClient(timeout=4.0) as client:
-                res = await client.get(f"{self.BASE_URL}/here/?token={self.api_token}")
-                return res.status_code == 200 and res.json().get("status") == "ok"
-        except Exception:
-            return False
+        return "waqi"
 
     async def get_current_aqi(
-        self, latitude: float, longitude: float, location_name: str
-    ) -> CurrentAQIResponse:
-        if not self.api_token:
-            raise ValueError("WAQI API token not configured")
+        self,
+        lat: float,
+        lon: float,
+        location_name: Optional[str] = None,
+        standard: Optional[AQIStandard] = None,
+    ) -> AQIReading:
+        if not self.api_key:
+            raise ValueError("WAQI_API_KEY is not configured")
 
-        url = f"{self.BASE_URL}/geo:{latitude};{longitude}/?token={self.api_token}"
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            resp = await client.get(url)
+        url = f"{self.BASE_URL}/feed/geo:{lat};{lon}/"
+        params = {"token": self.api_key}
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            resp = await client.get(url, params=params)
             resp.raise_for_status()
-            data = resp.json()
+            payload = resp.json()
 
-        if data.get("status") != "ok":
-            raise RuntimeError(f"WAQI API Error: {data.get('data')}")
+        if payload.get("status") != "ok":
+            raise RuntimeError(f"WAQI API Error: {payload.get('data')}")
 
-        d = data["data"]
-        reported_aqi = int(d.get("aqi", 50))
-        dominentpol = d.get("dominentpol", "pm25").lower()
-        iaqi = d.get("iaqi", {})
+        data = payload.get("data", {})
+        aqi_val = int(data.get("aqi", 50))
+        iaqi = data.get("iaqi", {})
 
-        pm25_val = float(iaqi.get("pm25", {}).get("v", 15.0))
-        pm10_val = float(iaqi.get("pm10", {}).get("v", 30.0))
-        no2_val = float(iaqi.get("no2", {}).get("v", 20.0))
-        o3_val = float(iaqi.get("o3", {}).get("v", 35.0))
-        co_val = float(iaqi.get("co", {}).get("v", 0.5))
-        so2_val = float(iaqi.get("so2", {}).get("v", 5.0))
+        pm2_5 = float(iaqi.get("pm25", {}).get("v", 12.0))
+        pm10 = float(iaqi.get("pm10", {}).get("v", 20.0))
+        o3 = float(iaqi.get("o3", {}).get("v")) if "o3" in iaqi else None
+        no2 = float(iaqi.get("no2", {}).get("v")) if "no2" in iaqi else None
+        so2 = float(iaqi.get("so2", {}).get("v")) if "so2" in iaqi else None
+        co = float(iaqi.get("co", {}).get("v")) if "co" in iaqi else None
 
-        p_pm25 = AQICalculator.compute_pollutant_data("pm2_5", pm25_val)
-        p_pm10 = AQICalculator.compute_pollutant_data("pm10", pm10_val)
-        p_no2 = AQICalculator.compute_pollutant_data("no2", no2_val)
-        p_o3 = AQICalculator.compute_pollutant_data("o3", o3_val)
-        p_co = AQICalculator.compute_pollutant_data("co", co_val)
-        p_so2 = AQICalculator.compute_pollutant_data("so2", so2_val)
+        category = get_category_from_aqi(aqi_val)
+        dominant = data.get("dominentpol", "PM2.5").upper()
+        city_name = location_name or data.get("city", {}).get("name", f"Coords ({lat:.2f}, {lon:.2f})")
 
-        category = AQICalculator.get_category(reported_aqi)
-        headline, caution = AQICalculator.get_health_statements(category, dominentpol)
+        # CPCB computation
+        cpcb_res = calculate_cpcb_aqi(pm2_5=pm2_5, pm10=pm10, no2=no2, o3=o3, so2=so2, co=co)
 
-        temp_c = float(iaqi.get("t", {}).get("v", 22.0))
-        rh = float(iaqi.get("h", {}).get("v", 55.0))
-        wind = float(iaqi.get("w", {}).get("v", 10.0))
-
-        return CurrentAQIResponse(
-            location_name=location_name,
-            latitude=latitude,
-            longitude=longitude,
-            timestamp=d.get("time", {}).get("iso", datetime.now(timezone.utc).isoformat()),
-            aqi=reported_aqi,
+        return AQIReading(
+            aqi_us=aqi_val,
             category=category,
-            dominant_pollutant=dominentpol.upper(),
-            pollutants=PollutantsBreakdown(
-                pm2_5=p_pm25,
-                pm10=p_pm10,
-                no2=p_no2,
-                o3=p_o3,
-                co=p_co,
-                so2=p_so2,
-            ),
-            atmospheric=AtmosphericConditions(
-                temperature_c=temp_c,
-                relative_humidity_percent=rh,
-                wind_speed_kmh=wind,
+            category_label=get_category_label(category),
+            color_hex=get_category_color(category),
+            dominant_pollutant=dominant,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            location_name=city_name,
+            latitude=lat,
+            longitude=lon,
+            pollutants=PollutantBreakdown(
+                pm2_5=pm2_5,
+                pm10=pm10,
+                o3=o3,
+                no2=no2,
+                so2=so2,
+                co=co,
             ),
             provider=self.name,
-            health_headline=headline,
-            cautionary_statement=caution,
+            active_standard=standard or AQIStandard.US_EPA,
+            us_epa=USEPAReading(
+                aqi=aqi_val,
+                category=category,
+                category_label=get_category_label(category),
+                color_hex=get_category_color(category),
+                dominant_pollutant=dominant,
+            ),
+            data_type="observation",
+            source_attribution=f"WAQI Ground Station Monitoring ({city_name})",
         )
 
-    async def get_forecast_aqi(
-        self, latitude: float, longitude: float, location_name: str
-    ) -> ForecastAQIResponse:
-        # If forecast isn't full in basic WAQI feed, delegate or build basic daily steps
-        curr = await self.get_current_aqi(latitude, longitude, location_name)
-        hourly = [
-            HourlyAQIPoint(
-                timestamp=datetime.now(timezone.utc).isoformat(),
-                hour=12,
-                aqi=curr.aqi,
-                category=curr.category,
-                pm2_5=curr.pollutants.pm2_5.value if curr.pollutants.pm2_5 else 15.0,
-                pm10=curr.pollutants.pm10.value if curr.pollutants.pm10 else 30.0,
-                dominant_pollutant=curr.dominant_pollutant,
-            )
-        ]
-        return ForecastAQIResponse(
-            location_name=location_name,
-            latitude=latitude,
-            longitude=longitude,
-            current_aqi=curr.aqi,
-            peak_aqi=curr.aqi,
-            peak_timestamp=curr.timestamp,
-            cleanest_aqi=curr.aqi,
-            cleanest_timestamp=curr.timestamp,
-            hourly=hourly,
-            provider=self.name,
-        )
+    async def get_forecast(
+        self,
+        lat: float,
+        lon: float,
+        location_name: Optional[str] = None,
+        hours: int = 24,
+    ) -> AirQualityForecast:
+        raise NotImplementedError("WAQI basic tier does not support granular hourly forecasts; use open-meteo provider.")
+
+    async def search_locations(self, query: str) -> List[LocationSearchResult]:
+        if not self.api_key:
+            return []
+        url = f"{self.BASE_URL}/search/"
+        params = {"token": self.api_key, "keyword": query}
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            payload = resp.json()
+
+        results = []
+        for station in payload.get("data", []):
+            geo = station.get("station", {}).get("geo", [])
+            if len(geo) == 2:
+                results.append(
+                    LocationSearchResult(
+                        name=station.get("station", {}).get("name", "Unknown"),
+                        country="",
+                        latitude=geo[0],
+                        longitude=geo[1],
+                    )
+                )
+        return results

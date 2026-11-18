@@ -1,42 +1,99 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-@layer base {
-  body {
-    @apply bg-navy-950 text-slate-100 font-sans;
-  }
+:root {
+  --bg-primary: #070D1E;
+  --bg-card: #0D162B;
+  --bg-card-hover: #121F3D;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(16, 185, 129, 0.25);
+  
+  --emerald-accent: #10B981;
+  --cyan-accent: #06B6D4;
+  --amber-warning: #F59E0B;
+  --orange-caution: #F97316;
+  --crimson-danger: #EF4444;
+  --violet-severe: #8B5CF6;
 }
 
-/* Custom Scrollbar for Consultation Drawer and Dashboard */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  color: #E2E8F0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+code, .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Glassmorphic cards */
+.glass-panel {
+  background: rgba(13, 22, 43, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+}
+
+.glass-panel-hover:hover {
+  background: rgba(18, 31, 61, 0.85);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.3);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.3);
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #0A1128;
+  background: #070D1E;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #1C2E60;
-  border-radius: 9999px;
+  background: #1E293B;
+  border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #06B6D4;
+  background: #334155;
 }
 
-/* Glass Card Component */
-.glass-panel {
-  background: rgba(14, 23, 56, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(28, 46, 96, 0.6);
+/* Animations */
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
 }
 
-.glass-panel-subtle {
-  background: rgba(10, 17, 40, 0.5);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(28, 46, 96, 0.4);
+.animate-pulse-subtle {
+  animation: pulseSubtle 3s ease-in-out infinite;
+}
+
+@keyframes breezeFlow {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.breeze-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.breeze-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.08), transparent);
+  animation: breezeFlow 4s linear infinite;
 }

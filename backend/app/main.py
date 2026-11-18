@@ -1,65 +1,71 @@
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import settings
-from app.api.v1.aqi import router as aqi_router
-from app.api.v1.recommendations import router as recs_router
-from app.api.v1.family import router as family_router
-from app.api.v1.consultation import router as consult_router
+from fastapi.responses import JSONResponse
+
+from app.api.router import api_router
+from app.core.config import get_settings
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - [%(levelname)s] - %(name)s - %(message)s"
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("breathewise")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing BreatheWise AI Atmospheric Engine...")
+    settings = get_settings()
+    logger.info(f"Starting {settings.APP_NAME} in {settings.ENVIRONMENT} mode")
     yield
-    logger.info("Shutting down BreatheWise AI services.")
+    logger.info(f"Shutting down {settings.APP_NAME}")
 
 
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
-    description="Intelligent Urban Air Quality Assistant & Family Environmental Health Platform",
+    title="BreatheWise AI - Urban Air Quality Assistant",
+    description="Intelligent urban air quality and environmental health advisory API powered by Open-Meteo & Gemini AI",
+    version="0.1.0",
     lifespan=lifespan,
 )
 
-# CORS configuration
+settings = get_settings()
+
+# Setup CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=settings.cors_origins_list or ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Mount API routers
-API_V1_PREFIX = "/api/v1"
-app.include_router(aqi_router, prefix=API_V1_PREFIX)
-app.include_router(recs_router, prefix=API_V1_PREFIX)
-app.include_router(family_router, prefix=API_V1_PREFIX)
-app.include_router(consult_router, prefix=API_V1_PREFIX)
+# Mount API routes
+app.include_router(api_router)
 
 
-@app.get("/", tags=["Health"])
-async def root():
-    return {
-        "status": "online",
-        "service": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "docs_url": "/docs",
-    }
-
-
-@app.get("/health", tags=["Health"])
+@app.get("/health", tags=["System"])
+@app.get("/api/health", tags=["System"])
 async def health_check():
+    """Health check endpoint for container and deployment monitors."""
     return {
         "status": "healthy",
-        "gemini_configured": bool(settings.GEMINI_API_KEY),
+        "service": "BreatheWise AI Backend",
+        "version": "0.1.0",
         "default_provider": settings.DEFAULT_AQI_PROVIDER,
+        "gemini_active": bool(settings.GEMINI_API_KEY),
     }
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled error processing {request.method} {request.url.path}: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal environmental processing error occurred. Please try again."},
+    )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=settings.DEBUG)

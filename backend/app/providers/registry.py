@@ -1,195 +1,112 @@
-import time
 import logging
-from typing import Dict, Optional, Tuple, Any
+import time
+from typing import Dict, List, Optional, Tuple
+from app.core.config import get_settings
+from app.models.aqi import AQIReading, AQIStandard, AirQualityForecast, LocationSearchResult
 from app.providers.base import BaseAQIProvider
 from app.providers.open_meteo import OpenMeteoAQIProvider
 from app.providers.waqi import WAQIAQIProvider
-from app.models.aqi import CurrentAQIResponse, ForecastAQIResponse, PollutantsBreakdown, AtmosphericConditions, AQICategory, HourlyAQIPoint
-from app.services.aqi_calculator import AQICalculator
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 
-class ResilientAQIProviderRegistry:
-    """
-    Registry and fault-tolerant orchestrator for AQI providers.
-    Provides in-memory TTL caching, multi-provider fallbacks, and deterministic resilience.
-    """
+class ProviderRegistry:
+    """Manages active AQI data providers with in-memory caching and fallback."""
 
-    def __init__(self, ttl_seconds: int = 900):
-        self.ttl_seconds = ttl_seconds
-        self.providers: Dict[str, BaseAQIProvider] = {}
-        self._current_cache: Dict[str, Tuple[float, CurrentAQIResponse]] = {}
-        self._forecast_cache: Dict[str, Tuple[float, ForecastAQIResponse]] = {}
+    def __init__(self):
+        settings = get_settings()
+        self._providers: Dict[str, BaseAQIProvider] = {}
+        self._cache: Dict[str, Tuple[float, any]] = {}
+        self._cache_ttl = settings.AQI_CACHE_TTL_SECONDS
 
-        # Register providers
-        self.register_provider("open_meteo", OpenMeteoAQIProvider())
-        if settings.WAQI_API_TOKEN:
-            self.register_provider("waqi", WAQIAQIProvider(settings.WAQI_API_TOKEN))
+        # Register open-meteo provider (primary, always operational)
+        open_meteo = OpenMeteoAQIProvider()
+        self.register(open_meteo)
 
-    def register_provider(self, key: str, provider: BaseAQIProvider) -> None:
-        self.providers[key] = provider
+        # Register WAQI if token provided
+        if settings.WAQI_API_KEY:
+            self.register(WAQIAQIProvider(api_key=settings.WAQI_API_KEY))
 
-    def _make_key(self, lat: float, lon: float) -> str:
-        # Round to 2 decimals (~1.1 km resolution) for caching efficiency
-        return f"{round(lat, 2)}_{round(lon, 2)}"
+        self.default_provider_name = settings.DEFAULT_AQI_PROVIDER
+
+    def register(self, provider: BaseAQIProvider) -> None:
+        self._providers[provider.name] = provider
+        logger.info(f"Registered AQI provider: {provider.name}")
+
+    def get_provider(self, name: Optional[str] = None) -> BaseAQIProvider:
+        key = name or self.default_provider_name
+        if key in self._providers:
+            return self._providers[key]
+        if "open-meteo" in self._providers:
+            return self._providers["open-meteo"]
+        raise RuntimeError("No AQI providers are registered")
+
+    def _get_cache_key(self, prefix: str, lat: float, lon: float, extra: str = "") -> str:
+        # Round coordinates to 3 decimals (~100m) for cache reuse
+        return f"{prefix}:{round(lat, 3)}:{round(lon, 3)}:{extra}"
 
     async def get_current_aqi(
-        self, latitude: float, longitude: float, location_name: str, force_refresh: bool = False
-    ) -> CurrentAQIResponse:
-        cache_key = self._make_key(latitude, longitude)
+        self,
+        lat: float,
+        lon: float,
+        location_name: Optional[str] = None,
+        provider_name: Optional[str] = None,
+        standard: Optional[AQIStandard] = None,
+    ) -> AQIReading:
+        std_str = standard.value if standard else "default"
+        cache_key = self._get_cache_key("current", lat, lon, std_str)
         now = time.time()
 
-        if not force_refresh and cache_key in self._current_cache:
-            cached_time, cached_val = self._current_cache[cache_key]
-            if now - cached_time < self.ttl_seconds:
-                return cached_val
+        if cache_key in self._cache:
+            ts, cached_data = self._cache[cache_key]
+            if now - ts < self._cache_ttl:
+                return cached_data
 
-        # Primary attempt
-        primary_key = settings.DEFAULT_AQI_PROVIDER
-        primary = self.providers.get(primary_key) or self.providers.get("open_meteo")
+        provider = self.get_provider(provider_name)
+        try:
+            reading = await provider.get_current_aqi(lat, lon, location_name, standard)
+            self._cache[cache_key] = (now, reading)
+            return reading
+        except Exception as e:
+            logger.warning(f"Provider {provider.name} failed: {e}. Attempting failover to open-meteo.")
+            if provider.name != "open-meteo" and "open-meteo" in self._providers:
+                fallback = self._providers["open-meteo"]
+                reading = await fallback.get_current_aqi(lat, lon, location_name, standard)
+                self._cache[cache_key] = (now, reading)
+                return reading
+            raise
 
-        if primary:
-            try:
-                result = await primary.get_current_aqi(latitude, longitude, location_name)
-                self._current_cache[cache_key] = (now, result)
-                return result
-            except Exception as e:
-                logger.warning(f"Primary provider {primary.name} failed: {e}. Attempting failovers.")
-
-        # Failover attempts
-        for key, provider in self.providers.items():
-            if provider is primary:
-                continue
-            try:
-                result = await provider.get_current_aqi(latitude, longitude, location_name)
-                self._current_cache[cache_key] = (now, result)
-                return result
-            except Exception as e:
-                logger.warning(f"Failover provider {provider.name} failed: {e}")
-
-        # If network/upstream is completely unreachable, generate an authentic offline baseline
-        logger.error("All AQI providers unreachable. Returning deterministic local baseline.")
-        return self._create_deterministic_current_fallback(latitude, longitude, location_name)
-
-    async def get_forecast_aqi(
-        self, latitude: float, longitude: float, location_name: str, force_refresh: bool = False
-    ) -> ForecastAQIResponse:
-        cache_key = self._make_key(latitude, longitude)
+    async def get_forecast(
+        self,
+        lat: float,
+        lon: float,
+        location_name: Optional[str] = None,
+        hours: int = 24,
+    ) -> AirQualityForecast:
+        cache_key = self._get_cache_key("forecast", lat, lon, str(hours))
         now = time.time()
 
-        if not force_refresh and cache_key in self._forecast_cache:
-            cached_time, cached_val = self._forecast_cache[cache_key]
-            if now - cached_time < self.ttl_seconds:
-                return cached_val
+        if cache_key in self._cache:
+            ts, cached_data = self._cache[cache_key]
+            if now - ts < self._cache_ttl:
+                return cached_data
 
-        primary_key = settings.DEFAULT_AQI_PROVIDER
-        primary = self.providers.get(primary_key) or self.providers.get("open_meteo")
+        provider = self.get_provider("open-meteo")
+        forecast = await provider.get_forecast(lat, lon, location_name, hours)
+        self._cache[cache_key] = (now, forecast)
+        return forecast
 
-        if primary:
-            try:
-                result = await primary.get_forecast_aqi(latitude, longitude, location_name)
-                self._forecast_cache[cache_key] = (now, result)
-                return result
-            except Exception as e:
-                logger.warning(f"Primary provider {primary.name} forecast failed: {e}")
-
-        for key, provider in self.providers.items():
-            if provider is primary:
-                continue
-            try:
-                result = await provider.get_forecast_aqi(latitude, longitude, location_name)
-                self._forecast_cache[cache_key] = (now, result)
-                return result
-            except Exception as e:
-                logger.warning(f"Failover provider {provider.name} forecast failed: {e}")
-
-        return self._create_deterministic_forecast_fallback(latitude, longitude, location_name)
-
-    def _create_deterministic_current_fallback(
-        self, lat: float, lon: float, location_name: str
-    ) -> CurrentAQIResponse:
-        # Typical urban atmospheric baseline
-        pm25 = AQICalculator.compute_pollutant_data("pm2_5", 38.0)
-        pm10 = AQICalculator.compute_pollutant_data("pm10", 72.0)
-        no2 = AQICalculator.compute_pollutant_data("no2", 35.0)
-        o3 = AQICalculator.compute_pollutant_data("o3", 42.0)
-        co = AQICalculator.compute_pollutant_data("co", 0.8)
-        so2 = AQICalculator.compute_pollutant_data("so2", 8.0)
-
-        aqi = pm25.sub_index
-        cat = AQICalculator.get_category(aqi)
-        headline, caution = AQICalculator.get_health_statements(cat, "PM2.5")
-
-        return CurrentAQIResponse(
-            location_name=location_name,
-            latitude=lat,
-            longitude=lon,
-            timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            aqi=aqi,
-            category=cat,
-            dominant_pollutant="PM2.5",
-            pollutants=PollutantsBreakdown(
-                pm2_5=pm25,
-                pm10=pm10,
-                no2=no2,
-                o3=o3,
-                co=co,
-                so2=so2,
-            ),
-            atmospheric=AtmosphericConditions(
-                temperature_c=24.5,
-                relative_humidity_percent=52.0,
-                wind_speed_kmh=9.5,
-                wind_direction_deg=210.0,
-            ),
-            provider="Atmospheric Model (Resilient Fallback)",
-            health_headline=headline,
-            cautionary_statement=caution,
-        )
-
-    def _create_deterministic_forecast_fallback(
-        self, lat: float, lon: float, location_name: str
-    ) -> ForecastAQIResponse:
-        hourly = []
-        base_aqi = 65
-        for h in range(24):
-            # Diurnal atmospheric curve: peaks during morning and evening rush hours
-            hour_mod = h % 24
-            if 7 <= hour_mod <= 10 or 18 <= hour_mod <= 21:
-                h_aqi = base_aqi + 35 + (hour_mod % 3) * 5
-            elif 13 <= hour_mod <= 16:
-                h_aqi = max(35, base_aqi - 20)
-            else:
-                h_aqi = base_aqi + (h % 5)
-
-            cat = AQICalculator.get_category(h_aqi)
-            hourly.append(
-                HourlyAQIPoint(
-                    timestamp=f"T{hour_mod:02d}:00",
-                    hour=hour_mod,
-                    aqi=h_aqi,
-                    category=cat,
-                    pm2_5=round(h_aqi * 0.35, 1),
-                    pm10=round(h_aqi * 0.7, 1),
-                    dominant_pollutant="PM2.5",
-                )
-            )
-
-        return ForecastAQIResponse(
-            location_name=location_name,
-            latitude=lat,
-            longitude=lon,
-            current_aqi=base_aqi,
-            peak_aqi=max(p.aqi for p in hourly),
-            peak_timestamp="T09:00",
-            cleanest_aqi=min(p.aqi for p in hourly),
-            cleanest_timestamp="T14:00",
-            hourly=hourly,
-            provider="Atmospheric Model (Resilient Fallback)",
-        )
+    async def search_locations(self, query: str) -> List[LocationSearchResult]:
+        provider = self.get_provider("open-meteo")
+        return await provider.search_locations(query)
 
 
-# Global singleton registry instance
-aqi_registry = ResilientAQIProviderRegistry(ttl_seconds=settings.AQI_CACHE_TTL_SECONDS)
+# Global registry singleton
+_registry_instance: Optional[ProviderRegistry] = None
+
+
+def get_registry() -> ProviderRegistry:
+    global _registry_instance
+    if _registry_instance is None:
+        _registry_instance = ProviderRegistry()
+    return _registry_instance
