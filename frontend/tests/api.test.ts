@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { FamilyGroup } from '../src/types/family';
 import {
   fetchHealth,
   fetchCurrentAQI,
@@ -99,7 +100,12 @@ describe('BreatheWise Frontend API Service', () => {
       json: async () => mockRec,
     } as Response);
 
-    const mockFamily: any = { family_name: 'Smiths', members: [] };
+    const mockFamily: FamilyGroup = {
+      family_id: 'fam_1',
+      family_name: 'Smiths',
+      members: [],
+      is_demo: false,
+    };
     const res = await fetchComprehensiveRecommendations('Mumbai', undefined, undefined, mockFamily, 'cpcb');
     expect(res).toEqual(mockRec);
     expect(globalThis.fetch).toHaveBeenCalledWith(
@@ -109,6 +115,26 @@ describe('BreatheWise Frontend API Service', () => {
         headers: { 'Content-Type': 'application/json' },
       })
     );
+  });
+
+  it('fetchForecast extracts error detail on non-ok HTTP responses', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => ({ detail: 'Atmospheric simulation service unavailable' }),
+    } as Response);
+
+    await expect(fetchForecast('London')).rejects.toThrow('Atmospheric simulation service unavailable');
+  });
+
+  it('fetchHealth falls back to HTTP status message when response body is not JSON', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: async () => { throw new Error('Not JSON'); },
+    } as unknown as Response);
+
+    await expect(fetchHealth()).rejects.toThrow('Backend health check failed (HTTP 503)');
   });
 
   it('calculateEmissions sends POST with request body and aqi query param', async () => {

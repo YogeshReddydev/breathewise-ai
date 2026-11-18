@@ -95,15 +95,17 @@ export const MaskFilterEstimator: React.FC<MaskFilterEstimatorProps> = ({ readin
           
           {/* Mask Type Selector */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider">
+            <span id="mask-grade-label" className="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider">
               Selected Respirator Grade:
-            </label>
-            <div className="grid grid-cols-2 gap-2">
+            </span>
+            <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="mask-grade-label">
               {(Object.keys(maskSpecs) as MaskType[]).map((key) => (
                 <button
                   key={key}
+                  type="button"
+                  aria-pressed={maskType === key}
                   onClick={() => setMaskType(key)}
-                  className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:outline-none ${
                     maskType === key
                       ? 'bg-teal-50 border-teal-300 text-teal-950 shadow-xs'
                       : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -111,7 +113,7 @@ export const MaskFilterEstimator: React.FC<MaskFilterEstimatorProps> = ({ readin
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs">{maskSpecs[key].name}</span>
-                    {maskType === key && <Check className="w-3.5 h-3.5 text-teal-700 shrink-0" />}
+                    {maskType === key && <Check className="w-3.5 h-3.5 text-teal-700 shrink-0" aria-hidden="true" />}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono block mt-0.5">
                     {(maskSpecs[key].efficiency * 100).toFixed(0)}% efficiency
@@ -127,21 +129,28 @@ export const MaskFilterEstimator: React.FC<MaskFilterEstimatorProps> = ({ readin
           {/* Daily Exposure Slider */}
           <div className="pt-2">
             <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
-              <span>Daily Outdoor Exposure:</span>
+              <label htmlFor="exposure-hours-slider" className="cursor-pointer">
+                Daily Outdoor Exposure:
+              </label>
               <span className="font-mono text-teal-900 bg-teal-50 px-2.5 py-0.5 rounded-md border border-teal-200">
                 {exposureHours} hr{exposureHours > 1 ? 's' : ''}/day
               </span>
             </div>
             <input
+              id="exposure-hours-slider"
               type="range"
               min="0.5"
               max="8"
               step="0.5"
               value={exposureHours}
+              aria-label="Daily outdoor exposure in hours"
+              aria-valuemin={0.5}
+              aria-valuemax={8}
+              aria-valuenow={exposureHours}
               onChange={(e) => setExposureHours(parseFloat(e.target.value))}
-              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-700"
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-700 focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:outline-none"
             />
-            <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-1" aria-hidden="true">
               <span>30m (commute)</span>
               <span>4h (outdoor work)</span>
               <span>8h (full shift)</span>

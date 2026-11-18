@@ -60,10 +60,12 @@ export const WinterSmogShield: React.FC<WinterSmogShieldProps> = ({ reading }) =
           </div>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1 text-xs font-bold text-cyan-800 hover:text-cyan-950 px-2 py-1 rounded-lg hover:bg-cyan-50 transition-colors"
+            aria-expanded={isExpanded}
+            aria-controls="smog-physics-panel"
+            className="flex items-center gap-1 text-xs font-bold text-cyan-800 hover:text-cyan-950 px-2 py-1 rounded-lg hover:bg-cyan-50 transition-colors focus-visible:ring-2 focus-visible:ring-cyan-600 focus-visible:outline-none"
           >
             <span>{isExpanded ? 'Hide Physics' : 'Smog Physics'}</span>
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {isExpanded ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -134,7 +136,7 @@ export const WinterSmogShield: React.FC<WinterSmogShieldProps> = ({ reading }) =
 
       {/* Expandable Atmospheric Physics Brief */}
       {isExpanded && (
-        <div className="mt-4 p-4 rounded-xl bg-cyan-50/60 border border-cyan-200 text-xs text-slate-700 animate-fadeIn space-y-2">
+        <div id="smog-physics-panel" className="mt-4 p-4 rounded-xl bg-cyan-50/60 border border-cyan-200 text-xs text-slate-700 animate-fadeIn space-y-2">
           <div className="font-bold text-cyan-950 flex items-center gap-1.5">
             <CloudFog className="w-4 h-4 text-cyan-700" />
             <span>How Thermal Inversion Magnifies Winter Smog:</span>

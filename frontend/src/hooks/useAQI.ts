@@ -50,14 +50,15 @@ export function useAQI(initialCity: string = 'New Delhi', family?: FamilyGroup) 
       setForecast(forecastData);
       setRecommendations(recData);
       setIsStale(currentReading.is_stale || false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching AQI intelligence:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update atmospheric telemetry';
       // If we already have a reading, keep it but mark as stale
       if (readingRef.current) {
         setIsStale(true);
         setError('Displaying cached atmospheric telemetry. Reconnecting to live provider...');
       } else {
-        setError(err?.message || 'Failed to update atmospheric telemetry');
+        setError(errorMessage);
       }
     } finally {
       setLoading(false);

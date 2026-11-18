@@ -143,7 +143,7 @@ export const SustainableLivingSection: React.FC<SustainableLivingSectionProps> =
             {/* Distance Slider */}
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label htmlFor="distance-slider" className="text-xs font-semibold text-slate-700">
+                <label htmlFor="distance-slider" className="text-xs font-semibold text-slate-700 cursor-pointer">
                   One-Way Commute Distance
                 </label>
                 <span className="text-xs font-mono font-bold text-emerald-800">{distance} km</span>
@@ -154,15 +154,19 @@ export const SustainableLivingSection: React.FC<SustainableLivingSectionProps> =
                 min="1"
                 max="60"
                 value={distance}
+                aria-label="One-Way Commute Distance in kilometers"
+                aria-valuemin={1}
+                aria-valuemax={60}
+                aria-valuenow={distance}
                 onChange={(e) => setDistance(Number(e.target.value))}
-                className="w-full accent-emerald-700 cursor-pointer"
+                className="w-full accent-emerald-700 cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:outline-none"
               />
             </div>
 
             {/* Trips Per Week */}
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label htmlFor="trips-slider" className="text-xs font-semibold text-slate-700">
+                <label htmlFor="trips-slider" className="text-xs font-semibold text-slate-700 cursor-pointer">
                   Trips Per Week
                 </label>
                 <span className="text-xs font-mono font-bold text-emerald-800">{tripsPerWeek} trips</span>
@@ -174,8 +178,12 @@ export const SustainableLivingSection: React.FC<SustainableLivingSectionProps> =
                 max="28"
                 step="2"
                 value={tripsPerWeek}
+                aria-label="Commute trips per week"
+                aria-valuemin={2}
+                aria-valuemax={28}
+                aria-valuenow={tripsPerWeek}
                 onChange={(e) => setTripsPerWeek(Number(e.target.value))}
-                className="w-full accent-emerald-700 cursor-pointer"
+                className="w-full accent-emerald-700 cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:outline-none"
               />
             </div>
 

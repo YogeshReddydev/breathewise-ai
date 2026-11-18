@@ -115,7 +115,7 @@ export const CityComparisonMatrix: React.FC<CityComparisonMatrixProps> = ({
       </div>
 
       {/* Comparison Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 my-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 my-5" role="list" aria-label="Benchmark Cities List">
         {benchmarkCities.map((city) => {
           const diff = city.benchmarkAQI - currentCityAQI;
           const isBetter = diff < 0;
@@ -124,8 +124,17 @@ export const CityComparisonMatrix: React.FC<CityComparisonMatrixProps> = ({
           return (
             <div
               key={city.name}
+              role="button"
+              tabIndex={0}
+              aria-label={`Switch active location to ${city.name}. AQI is ${city.benchmarkAQI}, ${city.category}.`}
               onClick={() => onSelectCity(city.name)}
-              className={`p-4 rounded-xl border transition-all cursor-pointer relative group ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectCity(city.name);
+                }
+              }}
+              className={`p-4 rounded-xl border transition-all cursor-pointer relative group focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:outline-none ${
                 isCurrent
                   ? 'bg-emerald-50/70 border-emerald-300 ring-2 ring-emerald-500/20 shadow-xs'
                   : 'bg-slate-50/80 border-slate-200 hover-lift hover:border-slate-300 hover:bg-white'

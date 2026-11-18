@@ -235,6 +235,7 @@ export const EnvironmentalAssistant: React.FC<EnvironmentalAssistantProps> = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about air quality, running safety, HEPA purifiers..."
+            aria-label="Ask about air quality, running safety, or purifiers"
             disabled={loading}
             className="flex-1 bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500/20 disabled:opacity-50"
           />

@@ -25,7 +25,7 @@ export function useFamilyProfiles() {
       } else {
         setSelectedMemberId(null);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn('Could not load profile from backend, using demo default:', err);
       setActionError('Working in offline household mode');
     } finally {
@@ -42,8 +42,8 @@ export function useFamilyProfiles() {
       const res = await resetDemoProfile();
       setFamily(res);
       if (res.members.length > 0) setSelectedMemberId(res.members[0].id);
-    } catch (err: any) {
-      setActionError(err.message);
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Failed to reset demo profile');
     }
   };
 
@@ -52,8 +52,8 @@ export function useFamilyProfiles() {
       const res = await clearDemoProfile();
       setFamily(res);
       setSelectedMemberId(null);
-    } catch (err: any) {
-      setActionError(err.message);
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Failed to clear demo profile');
     }
   };
 
@@ -62,8 +62,8 @@ export function useFamilyProfiles() {
       const res = await addFamilyMember(member);
       setFamily(res);
       setSelectedMemberId(member.id);
-    } catch (err: any) {
-      setActionError(err.message);
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Failed to add family member');
     }
   };
 
@@ -74,8 +74,8 @@ export function useFamilyProfiles() {
       if (selectedMemberId === memberId) {
         setSelectedMemberId(res.members.length > 0 ? res.members[0].id : null);
       }
-    } catch (err: any) {
-      setActionError(err.message);
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : 'Failed to remove family member');
     }
   };
 

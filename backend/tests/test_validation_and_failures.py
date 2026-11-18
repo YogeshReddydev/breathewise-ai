@@ -181,3 +181,50 @@ def test_cpcb_breakpoint_boundaries_and_extreme_capping():
     # Extreme value exceeding 500 µg/m³ capped at 500
     sub_extreme = calculate_sub_index("pm2_5", 750.0)
     assert sub_extreme == 500
+
+
+def test_forecast_invalid_hours_validation():
+    """Verify that forecast hours must be bounded between 6 and 72 hours."""
+    # Under minimum (ge=6)
+    res_low = client.get("/api/aqi/forecast?city=Delhi&hours=4")
+    assert res_low.status_code == 422
+
+    # Over maximum (le=72)
+    res_high = client.get("/api/aqi/forecast?city=Delhi&hours=96")
+    assert res_high.status_code == 422
+
+
+def test_sustainability_invalid_mode_rejection():
+    """Verify that unsupported transport modes are strictly rejected."""
+    payload = {
+        "distance_km": 10.0,
+        "baseline_mode": "rocket_ship",
+        "target_mode": "metro_train",
+        "trips_per_week": 5,
+    }
+    res = client.post("/api/sustainability/calculate", json=payload)
+    assert res.status_code == 422
+
+
+def test_sql_and_xss_query_sanitization():
+    """Verify that malicious injection characters and SQL comment sequences are sanitized."""
+    from app.core.security import sanitize_query
+    dirty_input = "Delhi'; DROP TABLE aqi; -- <script>alert(1)</script>"
+    clean_output = sanitize_query(dirty_input)
+    assert "DROP TABLE" in clean_output  # words remain
+    assert ";" not in clean_output       # statement separators stripped
+    assert "--" not in clean_output      # sql comments stripped
+    assert "<" not in clean_output       # tags stripped
+    assert ">" not in clean_output
+
+
+def test_strict_coordinate_finite_check():
+    """Verify that boolean, string, or inf values are strictly rejected by coordinate validator."""
+    from app.core.security import validate_coordinates
+    assert validate_coordinates(28.6, 77.2) is True
+    assert validate_coordinates("28.6", 77.2) is False  # type: ignore
+    assert validate_coordinates(float("nan"), 77.2) is False
+    assert validate_coordinates(28.6, float("inf")) is False
+    assert validate_coordinates(95.0, 77.2) is False
+    assert validate_coordinates(28.6, -185.0) is False
+
